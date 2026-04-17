@@ -46,6 +46,18 @@ TOOL_SCHEMAS = [
     {
         "type": "function",
         "function": {
+            "name": "github_list_repos",
+            "description": "Listet alle GitHub Repositories des Nutzers auf",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": [],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "github_list_files",
             "description": "Listet Dateien in einem Verzeichnis des GitHub Repositories",
             "parameters": {
@@ -118,7 +130,9 @@ TOOL_SCHEMAS = [
 
 def execute_tool(name: str, args: dict) -> str:
     try:
-        if name == "github_read_file":
+        if name == "github_list_repos":
+            return github.list_repos()
+        elif name == "github_read_file":
             return github.read_file(**args)
         elif name == "github_write_file":
             return github.write_file(**args)
