@@ -1,0 +1,8 @@
+openai>=1.0.0
+PyGithub>=2.1.0
+notion-client>=2.2.0
+sounddevice>=0.4.6
+scipy>=1.11.0
+numpy>=1.24.0
+python-dotenv>=1.0.0
+rich>=13.7.0
