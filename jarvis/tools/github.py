@@ -46,6 +46,23 @@ def write_file(path: str, content: str, message: str, repo: str = None) -> str:
         return f"GitHub Fehler: {e.data.get('message', str(e))}"
 
 
+def list_repos() -> str:
+    if not config.GITHUB_TOKEN:
+        return "Fehler: Kein GitHub Token konfiguriert"
+
+    g = _get_github()
+    try:
+        user = g.get_user()
+        repos = user.get_repos(sort="updated")
+        lines = []
+        for r in repos:
+            visibility = "privat" if r.private else "öffentlich"
+            lines.append(f"{r.full_name}  [{visibility}]  {r.description or ''}")
+        return "\n".join(lines) if lines else "Keine Repositories gefunden."
+    except GithubException as e:
+        return f"GitHub Fehler: {e.data.get('message', str(e))}"
+
+
 def list_files(path: str = "", repo: str = None) -> str:
     repo_name = repo or config.GITHUB_REPO
     if not repo_name:
