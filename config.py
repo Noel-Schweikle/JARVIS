@@ -5,6 +5,7 @@ _BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(_BASE_DIR, ".env"))
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")
 GITHUB_REPO = os.getenv("GITHUB_REPO", "")
 NOTION_TOKEN = os.getenv("NOTION_TOKEN", "")

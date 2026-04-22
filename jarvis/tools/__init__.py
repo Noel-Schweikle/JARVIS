@@ -1,7 +1,76 @@
 import json
 from jarvis.tools import github, notion
 
-TOOL_SCHEMAS = [
+# ── Claude Coding Tools ──────────────────────────────────────────────────────
+_CLAUDE_CODING_SCHEMAS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "claude_generate_code",
+            "description": (
+                "Programmiert Code mit Claude Opus 4.7 (Anthropic). "
+                "Nutze dieses Tool immer wenn der Nutzer Code programmieren, schreiben oder "
+                "erstellen möchte — egal welche Sprache oder Framework."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "task": {
+                        "type": "string",
+                        "description": "Was soll programmiert werden? Genaue Beschreibung der Aufgabe.",
+                    },
+                    "language": {
+                        "type": "string",
+                        "description": "Programmiersprache oder Framework (z.B. Python, TypeScript, React, Arduino)",
+                    },
+                    "context": {
+                        "type": "string",
+                        "description": "Zusätzlicher Kontext, Anforderungen oder bestehender Code",
+                    },
+                },
+                "required": ["task"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "claude_review_code",
+            "description": (
+                "Lässt Claude Opus 4.7 Code reviewen, verbessern und Probleme finden. "
+                "Nutze dieses Tool wenn der Nutzer Code reviewen, debuggen oder verbessern möchte."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "code": {"type": "string", "description": "Der zu reviewende Code"},
+                    "language": {"type": "string", "description": "Programmiersprache (optional)"},
+                },
+                "required": ["code"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "claude_explain_code",
+            "description": (
+                "Lässt Claude Opus 4.7 Code erklären. "
+                "Nutze dieses Tool wenn der Nutzer Code erklärt haben möchte."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "code": {"type": "string", "description": "Der zu erklärende Code"},
+                    "language": {"type": "string", "description": "Programmiersprache (optional)"},
+                },
+                "required": ["code"],
+            },
+        },
+    },
+]
+
+TOOL_SCHEMAS = _CLAUDE_CODING_SCHEMAS + [
     # ── GitHub ──────────────────────────────────────────────────────────────
     {
         "type": "function",
@@ -222,6 +291,16 @@ TOOL_SCHEMAS = [
 
 def execute_tool(name: str, args: dict) -> str:
     try:
+        # Claude Coding
+        if name == "claude_generate_code":
+            from jarvis.tools import claude_coder
+            return claude_coder.generate_code(**args)
+        elif name == "claude_review_code":
+            from jarvis.tools import claude_coder
+            return claude_coder.review_code(**args)
+        elif name == "claude_explain_code":
+            from jarvis.tools import claude_coder
+            return claude_coder.explain_code(**args)
         # GitHub
         if name == "github_list_repos":
             return github.list_repos()
