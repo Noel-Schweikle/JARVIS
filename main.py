@@ -31,7 +31,13 @@ def main() -> None:
     if not check_config():
         sys.exit(1)
 
+    from jarvis.web_server import start_server
+    from jarvis.state import jarvis_state
+    start_server()
+    console.print("[dim]Web-Dashboard: [bold]http://localhost:7777[/bold][/dim]\n")
+
     from jarvis import agent
+    jarvis_state.set_online(mode="voice" if args.voice else "text")
 
     if args.voice:
         agent.run_voice(voice_output=args.speak)

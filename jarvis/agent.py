@@ -5,6 +5,7 @@ from rich.console import Console
 from rich.markdown import Markdown
 import config
 from jarvis.tools import TOOL_SCHEMAS, execute_tool
+from jarvis.state import jarvis_state
 
 console = Console()
 
@@ -95,8 +96,13 @@ def run(voice_output: bool = False) -> None:
             continue
 
         messages.append({"role": "user", "content": user_input})
+        jarvis_state.add_activity("user", user_input)
+        jarvis_state.set_status("processing", user_input[:80])
+
         reply = _chat_with_tools(client, messages)
         messages.append({"role": "assistant", "content": reply})
+        jarvis_state.add_activity("assistant", reply)
+        jarvis_state.set_status("idle")
 
         console.print("\n[bold green]JARVIS:[/bold green]")
         console.print(Markdown(reply))
@@ -167,6 +173,7 @@ def _chat_with_tools(client: OpenAI, messages: list) -> str:
             name = call.function.name
             args = json.loads(call.function.arguments)
             console.print(f"[dim]→ {name}({', '.join(f'{k}={v!r}' for k, v in args.items())})[/dim]")
+            jarvis_state.add_activity("tool", str(args)[:200], tool=name)
             result = execute_tool(name, args)
             messages.append({
                 "role": "tool",
