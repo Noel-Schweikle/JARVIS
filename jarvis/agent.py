@@ -1,4 +1,5 @@
 import json
+import os
 from openai import OpenAI
 from rich.console import Console
 from rich.markdown import Markdown
@@ -7,7 +8,7 @@ from jarvis.tools import TOOL_SCHEMAS, execute_tool
 
 console = Console()
 
-SYSTEM_PROMPT = """\
+_BASE_SYSTEM = """\
 Du bist JARVIS, ein KI-Assistent spezialisiert auf Ingenieur- und Entwickleraufgaben.
 
 ## Fähigkeiten
@@ -47,6 +48,23 @@ Du bist JARVIS, ein KI-Assistent spezialisiert auf Ingenieur- und Entwickleraufg
 - Schreibe sauberen, kommentierten Code mit klaren Variablennamen
 """
 
+_VERHALTEN_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "verhalten_gpt.md")
+
+
+def _load_system_prompt() -> str:
+    """Liest verhalten_gpt.md ein und hängt es an den Basis-Prompt an."""
+    try:
+        with open(_VERHALTEN_PATH, encoding="utf-8") as f:
+            verhalten = f.read().strip()
+        if verhalten:
+            return _BASE_SYSTEM + "\n\n---\n\n" + verhalten
+    except FileNotFoundError:
+        pass
+    return _BASE_SYSTEM
+
+
+SYSTEM_PROMPT = _load_system_prompt()
+
 
 def run(voice_output: bool = False) -> None:
     client = OpenAI(api_key=config.OPENAI_API_KEY)
@@ -70,6 +88,10 @@ def run(voice_output: bool = False) -> None:
         if user_input.lower() == "clear":
             messages = [{"role": "system", "content": SYSTEM_PROMPT}]
             console.print("[dim]Verlauf gelöscht.[/dim]\n")
+            continue
+        if user_input.lower() == "reload":
+            messages = [{"role": "system", "content": _load_system_prompt()}]
+            console.print("[dim]Verhalten neu geladen.[/dim]\n")
             continue
 
         messages.append({"role": "user", "content": user_input})
