@@ -1,11 +1,33 @@
 import json
 import os
+import select
+import sys
+from typing import Optional
 from openai import OpenAI
 from rich.console import Console
 from rich.markdown import Markdown
 import config
 from jarvis.tools import TOOL_SCHEMAS, execute_tool
 from jarvis.state import jarvis_state
+
+
+def _next_input(prompt: str = "Du: ") -> Optional[str]:
+    """Read from web-UI queue OR stdin, whichever arrives first (100 ms polling)."""
+    sys.stdout.write(prompt)
+    sys.stdout.flush()
+    while True:
+        # Web-UI message has priority
+        try:
+            msg = jarvis_state.message_queue.get_nowait()
+            sys.stdout.write(f"[Web] {msg}\n")
+            sys.stdout.flush()
+            return msg
+        except Exception:
+            pass
+        # Non-blocking stdin check
+        ready, _, _ = select.select([sys.stdin], [], [], 0.1)
+        if ready:
+            return sys.stdin.readline().rstrip("\n")
 
 console = Console()
 
@@ -29,6 +51,11 @@ Du bist JARVIS, ein KI-Assistent spezialisiert auf Ingenieur- und Entwickleraufg
   nutze IMMER das Tool `claude_generate_code`, `claude_review_code` oder `claude_explain_code`
 - Claude Opus 4.7 ist spezialisiert auf Code — nutze ihn für alle Coding-Aufgaben
 - Dateien im GitHub Repository lesen und schreiben
+
+**Web-Recherche**
+- Aktuelle Informationen, Fakten und Dokumentationen aus dem Internet suchen (web_search)
+- Spezifische Webseiten lesen und zusammenfassen (web_fetch_page)
+- Nutze Internetsuche proaktiv wenn aktuelle oder externe Informationen gefragt sind
 
 **Wissensmanagement**
 - Notion-Notizen suchen, lesen und erstellen
@@ -76,7 +103,7 @@ def run(voice_output: bool = False) -> None:
 
     while True:
         try:
-            user_input = input("Du: ").strip()
+            user_input = _next_input("Du: ").strip()
         except (EOFError, KeyboardInterrupt):
             console.print("\n[dim]Beendet.[/dim]")
             break

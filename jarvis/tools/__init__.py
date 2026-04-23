@@ -225,6 +225,53 @@ TOOL_SCHEMAS = _CLAUDE_CODING_SCHEMAS + [
             "parameters": {"type": "object", "properties": {}, "required": []},
         },
     },
+    # ── Web-Suche & Fetch ────────────────────────────────────────────────────
+    {
+        "type": "function",
+        "function": {
+            "name": "web_search",
+            "description": (
+                "Sucht im Internet nach aktuellen Informationen, Fakten, Dokumentationen oder Neuigkeiten. "
+                "Nutze dieses Tool wenn der Nutzer etwas recherchieren, nachschlagen oder aktuelle "
+                "Informationen aus dem Web benötigt."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Suchanfrage (auf Englisch für beste Ergebnisse)",
+                    },
+                    "max_results": {
+                        "type": "integer",
+                        "description": "Maximale Anzahl Ergebnisse (Standard: 5)",
+                    },
+                },
+                "required": ["query"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "web_fetch_page",
+            "description": (
+                "Lädt den Textinhalt einer bestimmten Webseite. "
+                "Nutze dieses Tool um eine spezifische URL zu lesen, z.B. eine Dokumentationsseite "
+                "oder einen Artikel aus den Web-Suchergebnissen."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "description": "Die vollständige URL der Webseite",
+                    },
+                },
+                "required": ["url"],
+            },
+        },
+    },
     # ── Gmail ────────────────────────────────────────────────────────────────
     {
         "type": "function",
@@ -301,8 +348,15 @@ def execute_tool(name: str, args: dict) -> str:
         elif name == "claude_explain_code":
             from jarvis.tools import claude_coder
             return claude_coder.explain_code(**args)
+        # Web-Suche
+        if name == "web_search":
+            from jarvis.tools import web_search
+            return web_search.search(**args)
+        elif name == "web_fetch_page":
+            from jarvis.tools import web_search
+            return web_search.fetch_page(**args)
         # GitHub
-        if name == "github_list_repos":
+        elif name == "github_list_repos":
             return github.list_repos()
         elif name == "github_read_file":
             return github.read_file(**args)

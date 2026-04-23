@@ -3,834 +3,1205 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>J.A.R.V.I.S — COMMAND CENTER</title>
+<title>JARVIS</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
 <style>
-/* ── Reset & Variables ─────────────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-:root {
-  --bg:         #000810;
-  --bg2:        rgba(0, 10, 25, 0.94);
-  --bg3:        rgba(0, 18, 40, 0.85);
-  --cyan:       #00d4ff;
-  --cyan-dim:   rgba(0, 212, 255, 0.25);
-  --cyan-glow:  rgba(0, 212, 255, 0.4);
-  --purple:     #7b2fff;
-  --purple-lt:  #bf7fff;
-  --green:      #00ff88;
-  --amber:      #ffbb00;
-  --red:        #ff2050;
-  --text:       #b8dfff;
-  --text-dim:   #3a6080;
-  --mono:       'Share Tech Mono', monospace;
-  --head:       'Orbitron', sans-serif;
-}
-html, body {
-  width: 100%; height: 100%;
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--mono);
-  font-size: 12px;
-  overflow: hidden;
-}
+  :root {
+    --bg-0: oklch(0.065 0.018 240);
+    --bg-1: oklch(0.09 0.018 240);
+    --bg-2: oklch(0.12 0.016 240);
+    --bg-3: oklch(0.16 0.014 240);
+    --border: oklch(0.22 0.025 220);
+    --border-glow: oklch(0.28 0.06 195);
+    --cyan: oklch(0.75 0.14 195);
+    --cyan-dim: oklch(0.55 0.10 195);
+    --cyan-faint: oklch(0.75 0.14 195 / 0.08);
+    --amber: oklch(0.78 0.14 60);
+    --amber-dim: oklch(0.58 0.10 60);
+    --amber-faint: oklch(0.78 0.14 60 / 0.08);
+    --red: oklch(0.65 0.18 25);
+    --green: oklch(0.72 0.16 145);
+    --green-faint: oklch(0.72 0.16 145 / 0.1);
+    --text-1: oklch(0.92 0.01 220);
+    --text-2: oklch(0.65 0.02 220);
+    --text-3: oklch(0.42 0.02 220);
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Space Grotesk', sans-serif;
+  }
 
-/* ── Canvas Background ─────────────────────────────────────── */
-#bg {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-}
+  * { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* ── Corner Brackets ───────────────────────────────────────── */
-.corner {
-  position: fixed;
-  width: 28px; height: 28px;
-  pointer-events: none;
-  z-index: 10;
-  opacity: 0.6;
-}
-.corner.tl { top: 6px;  left: 6px;  border-top: 1px solid var(--cyan); border-left:  1px solid var(--cyan); }
-.corner.tr { top: 6px;  right: 6px; border-top: 1px solid var(--cyan); border-right: 1px solid var(--cyan); }
-.corner.bl { bottom: 6px; left: 6px;  border-bottom: 1px solid var(--cyan); border-left:  1px solid var(--cyan); }
-.corner.br { bottom: 6px; right: 6px; border-bottom: 1px solid var(--cyan); border-right: 1px solid var(--cyan); }
+  body {
+    background: var(--bg-0);
+    color: var(--text-1);
+    font-family: var(--sans);
+    height: 100vh;
+    overflow: hidden;
+    background-image:
+      linear-gradient(rgba(0,200,255,0.015) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,200,255,0.015) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
 
-/* ── App Shell ─────────────────────────────────────────────── */
-#app {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-}
+  /* Scanline overlay */
+  body::after {
+    content: '';
+    position: fixed; inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.03) 2px,
+      rgba(0,0,0,0.03) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
 
-/* ── Header ────────────────────────────────────────────────── */
-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 28px;
-  border-bottom: 1px solid var(--cyan-dim);
-  background: rgba(0, 4, 12, 0.97);
-  flex-shrink: 0;
-  position: relative;
-  overflow: hidden;
-}
-header::after {
-  content: '';
-  position: absolute;
-  bottom: 0; left: -100%;
-  width: 60%;
-  height: 1px;
-  background: linear-gradient(to right, transparent, var(--cyan), transparent);
-  animation: header-sweep 6s ease-in-out infinite;
-}
-@keyframes header-sweep {
-  0%   { left: -60%; }
-  100% { left: 160%; }
-}
+  #root { height: 100vh; display: flex; flex-direction: column; }
 
-.logo-wrap { user-select: none; }
-.logo {
-  font-family: var(--head);
-  font-size: 22px;
-  font-weight: 900;
-  letter-spacing: 10px;
-  color: var(--cyan);
-  text-shadow: 0 0 18px var(--cyan), 0 0 40px rgba(0,212,255,0.25);
-  line-height: 1;
-}
-.logo-sub {
-  font-size: 8px;
-  letter-spacing: 3.5px;
-  color: var(--text-dim);
-  margin-top: 3px;
-  text-transform: uppercase;
-}
+  .panel {
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    position: relative;
+    overflow: hidden;
+  }
+  .panel::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--cyan-dim), transparent);
+    opacity: 0.4;
+  }
 
-.header-mid {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-}
-.status-cluster {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.status-dot {
-  width: 10px; height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  transition: background 0.4s, box-shadow 0.4s;
-}
-.status-dot.idle {
-  background: var(--green);
-  box-shadow: 0 0 8px var(--green), 0 0 18px rgba(0,255,136,0.5);
-  animation: dot-pulse 2.5s ease-in-out infinite;
-}
-.status-dot.processing {
-  background: var(--amber);
-  box-shadow: 0 0 10px var(--amber), 0 0 20px rgba(255,187,0,0.4);
-  animation: dot-fast 0.5s ease-in-out infinite;
-}
-.status-dot.offline {
-  background: var(--red);
-  box-shadow: 0 0 6px var(--red);
-}
-.status-dot.reconnecting {
-  background: var(--amber);
-  animation: dot-blink 0.8s step-end infinite;
-}
-@keyframes dot-pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.55;transform:scale(0.8)} }
-@keyframes dot-fast  { 0%,100%{opacity:1} 50%{opacity:0.3} }
-@keyframes dot-blink { 0%,100%{opacity:1} 50%{opacity:0.08} }
+  .panel-title {
+    font-family: var(--mono);
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--cyan);
+    padding: 8px 12px 6px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--bg-2);
+    flex-shrink: 0;
+  }
 
-#statusLabel {
-  font-family: var(--head);
-  font-size: 11px;
-  letter-spacing: 4px;
-  color: var(--cyan);
-  min-width: 130px;
-  text-align: center;
-}
-.scan-bar {
-  width: 180px;
-  height: 2px;
-  background: rgba(0,212,255,0.1);
-  border-radius: 1px;
-  overflow: hidden;
-  position: relative;
-}
-.scan-bar::after {
-  content: '';
-  position: absolute;
-  top: 0; left: -40%;
-  width: 40%;
-  height: 100%;
-  background: linear-gradient(to right, transparent, var(--cyan), transparent);
-  animation: scan-bar 2s linear infinite;
-}
-@keyframes scan-bar { from{left:-40%} to{left:140%} }
+  .panel-title .bracket { color: var(--text-3); }
 
-.header-right { text-align: right; }
-.uptime-val {
-  font-family: var(--head);
-  font-size: 16px;
-  color: var(--cyan);
-  letter-spacing: 2px;
-  text-shadow: 0 0 10px rgba(0,212,255,0.4);
-}
-.uptime-lbl {
-  font-size: 8px;
-  letter-spacing: 3px;
-  color: var(--text-dim);
-  margin-top: 2px;
-  text-transform: uppercase;
-}
+  .glow-cyan { text-shadow: 0 0 12px var(--cyan); }
+  .glow-amber { text-shadow: 0 0 12px var(--amber); }
 
-/* ── Main Grid ─────────────────────────────────────────────── */
-main {
-  display: grid;
-  grid-template-columns: 230px 1fr 290px;
-  flex: 1;
-  overflow: hidden;
-  gap: 1px;
-  background: rgba(0, 212, 255, 0.08);
-}
+  /* Dot indicators */
+  .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .dot-green { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .dot-amber { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+  .dot-red { background: var(--red); box-shadow: 0 0 6px var(--red); }
+  .dot-cyan { background: var(--cyan); box-shadow: 0 0 6px var(--cyan); }
+  .dot-dim { background: var(--text-3); }
 
-/* ── Panels ────────────────────────────────────────────────── */
-.panel {
-  background: var(--bg2);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  position: relative;
-}
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border-glow); border-radius: 2px; }
 
-/* scanline sweep */
-.panel::before {
-  content: '';
-  position: absolute;
-  left: 0; right: 0;
-  top: -3px;
-  height: 3px;
-  background: linear-gradient(to right, transparent, rgba(0,212,255,0.5), transparent);
-  animation: panel-scan 14s linear infinite;
-  pointer-events: none;
-  z-index: 5;
-}
-.panel:nth-child(2)::before { animation-delay: -4.6s; }
-.panel:nth-child(3)::before { animation-delay: -9.3s; }
-@keyframes panel-scan { from{top:-3px} to{top:calc(100% + 3px)} }
+  /* Pulse animation */
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+  @keyframes blink { 0%,49% { opacity: 1; } 50%,100% { opacity: 0; } }
+  @keyframes shimmer {
+    0% { background-position: -200% center; }
+    100% { background-position: 200% center; }
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes spin { to { transform: rotate(360deg); } }
 
-.panel-header {
-  padding: 9px 16px;
-  font-family: var(--head);
-  font-size: 9px;
-  letter-spacing: 5px;
-  color: var(--cyan);
-  border-bottom: 1px solid var(--cyan-dim);
-  background: rgba(0, 16, 36, 0.9);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-  text-transform: uppercase;
-}
-.panel-header::before { content: '◈'; font-size: 9px; }
+  .pulse { animation: pulse 2s ease-in-out infinite; }
+  .blink { animation: blink 1s step-end infinite; }
 
-.panel-body {
-  flex: 1;
-  overflow-y: auto;
-  padding: 12px;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(0,212,255,0.2) transparent;
-}
-.panel-body::-webkit-scrollbar { width: 3px; }
-.panel-body::-webkit-scrollbar-track { background: transparent; }
-.panel-body::-webkit-scrollbar-thumb { background: rgba(0,212,255,0.2); border-radius: 2px; }
+  /* Tweaks panel */
+  #tweaks-panel {
+    position: fixed;
+    bottom: 20px; right: 20px;
+    width: 260px;
+    background: var(--bg-2);
+    border: 1px solid var(--border-glow);
+    border-radius: 8px;
+    box-shadow: 0 0 30px rgba(0,200,255,0.1);
+    z-index: 10000;
+    display: none;
+    font-family: var(--mono);
+    font-size: 11px;
+  }
+  #tweaks-panel.visible { display: block; animation: slideIn 0.2s ease; }
+  #tweaks-panel .tweak-head {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    color: var(--cyan);
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+  #tweaks-panel .tweak-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 12px; }
+  #tweaks-panel label { display: flex; flex-direction: column; gap: 4px; color: var(--text-2); font-size: 10px; }
+  #tweaks-panel select, #tweaks-panel input[type=range] {
+    background: var(--bg-3); border: 1px solid var(--border);
+    color: var(--text-1); padding: 4px 8px;
+    border-radius: 4px; font-family: var(--mono); font-size: 10px;
+    cursor: pointer; outline: none;
+  }
+  #tweaks-panel input[type=checkbox] { cursor: pointer; accent-color: var(--cyan); }
 
-/* ── Status Panel ──────────────────────────────────────────── */
-.stat-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 7px 2px;
-  border-bottom: 1px solid rgba(0,212,255,0.06);
-  gap: 8px;
-}
-.stat-label {
-  color: var(--text-dim);
-  font-size: 9px;
-  letter-spacing: 2.5px;
-  text-transform: uppercase;
-  flex-shrink: 0;
-}
-.stat-val {
-  color: var(--text);
-  font-size: 11px;
-  text-align: right;
-}
-.stat-val.s-idle       { color: var(--green); }
-.stat-val.s-processing { color: var(--amber); }
-.stat-val.s-offline    { color: var(--red); }
-
-.divider {
-  height: 1px;
-  background: var(--cyan-dim);
-  margin: 10px 0;
-  opacity: 0.5;
-}
-
-.big-num {
-  font-family: var(--head);
-  font-size: 22px;
-  color: var(--cyan);
-  text-shadow: 0 0 14px rgba(0,212,255,0.5);
-}
-
-.task-label {
-  font-size: 9px;
-  letter-spacing: 2.5px;
-  color: var(--text-dim);
-  text-transform: uppercase;
-  margin-bottom: 6px;
-  margin-top: 2px;
-}
-.task-box {
-  padding: 8px 10px;
-  border: 1px solid var(--cyan-dim);
-  background: rgba(0,212,255,0.02);
-  font-size: 11px;
-  color: var(--text);
-  line-height: 1.55;
-  min-height: 44px;
-  word-break: break-word;
-  border-radius: 2px;
-}
-.task-box.active {
-  border-color: rgba(255,187,0,0.5);
-  color: var(--amber);
-  background: rgba(255,187,0,0.03);
-  animation: task-flicker 1.8s ease-in-out infinite;
-}
-@keyframes task-flicker { 0%,100%{opacity:1} 60%{opacity:0.75} }
-
-/* ── Activity Feed ─────────────────────────────────────────── */
-.feed { display: flex; flex-direction: column; gap: 5px; }
-
-.feed-item {
-  padding: 7px 10px;
-  border-left: 2px solid transparent;
-  background: rgba(0,0,0,0.35);
-  border-radius: 0 3px 3px 0;
-  animation: feed-in 0.3s ease;
-}
-@keyframes feed-in {
-  from { opacity: 0; transform: translateX(-8px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
-.feed-item.user      { border-left-color: var(--cyan); }
-.feed-item.assistant { border-left-color: var(--purple-lt); }
-.feed-item.tool      { border-left-color: var(--green); }
-.feed-item.system    { border-left-color: var(--amber); }
-
-.feed-meta {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  margin-bottom: 4px;
-}
-.feed-time {
-  font-size: 9px;
-  color: var(--text-dim);
-  flex-shrink: 0;
-}
-.feed-badge {
-  font-family: var(--head);
-  font-size: 7.5px;
-  letter-spacing: 1.5px;
-  padding: 1px 5px;
-  border-radius: 2px;
-}
-.feed-badge.user      { background: rgba(0,212,255,0.12);  color: var(--cyan); }
-.feed-badge.assistant { background: rgba(123,47,255,0.18); color: var(--purple-lt); }
-.feed-badge.tool      { background: rgba(0,255,136,0.10);  color: var(--green); }
-.feed-badge.system    { background: rgba(255,187,0,0.12);  color: var(--amber); }
-
-.feed-tool-name {
-  font-size: 9px;
-  color: rgba(0,255,136,0.6);
-}
-.feed-content {
-  font-size: 11px;
-  line-height: 1.5;
-  word-break: break-word;
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-}
-
-/* ── Calendar Panel ────────────────────────────────────────── */
-.cal-event {
-  padding: 9px 10px;
-  border-left: 2px solid var(--cyan-dim);
-  margin-bottom: 7px;
-  background: rgba(0,212,255,0.025);
-  border-radius: 0 3px 3px 0;
-}
-.cal-event.today {
-  border-left-color: var(--cyan);
-  background: rgba(0,212,255,0.06);
-}
-.cal-event.soon  { border-left-color: rgba(100, 160, 255, 0.6); }
-.cal-event.later { border-left-color: var(--text-dim); }
-
-.cal-time {
-  font-family: var(--head);
-  font-size: 9px;
-  letter-spacing: 1px;
-  margin-bottom: 3px;
-}
-.cal-event.today  .cal-time { color: var(--cyan); }
-.cal-event.soon   .cal-time { color: #7ba4ff; }
-.cal-event.later  .cal-time { color: var(--text-dim); }
-
-.cal-title {
-  font-size: 11px;
-  color: var(--text);
-  line-height: 1.4;
-  margin-bottom: 2px;
-}
-.cal-loc {
-  font-size: 9px;
-  color: var(--text-dim);
-}
-.cal-msg {
-  text-align: center;
-  padding: 24px 12px;
-  color: var(--text-dim);
-  font-size: 10px;
-  letter-spacing: 2px;
-}
-.cal-msg.err { color: var(--red); }
-
-/* ── Footer ────────────────────────────────────────────────── */
-footer {
-  padding: 5px 28px;
-  border-top: 1px solid var(--cyan-dim);
-  background: rgba(0, 4, 12, 0.97);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 9px;
-  color: var(--text-dim);
-  letter-spacing: 2px;
-  flex-shrink: 0;
-}
-.footer-group { display: flex; gap: 18px; align-items: center; }
-.foot-item::before { content: '◈ '; color: rgba(0,212,255,0.35); }
+  /* Bar chart */
+  .bar-container {
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .bar-row {
+    display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 10px;
+  }
+  .bar-label { width: 70px; color: var(--text-2); flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar-track { flex: 1; height: 6px; background: var(--bg-3); border-radius: 3px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 3px; transition: width 0.6s cubic-bezier(0.4,0,0.2,1); }
+  .bar-val { width: 40px; text-align: right; color: var(--text-2); flex-shrink: 0; }
 </style>
 </head>
 <body>
-
-<canvas id="bg"></canvas>
-<div class="corner tl"></div>
-<div class="corner tr"></div>
-<div class="corner bl"></div>
-<div class="corner br"></div>
-
-<div id="app">
-  <!-- ── Header ── -->
-  <header>
-    <div class="logo-wrap">
-      <div class="logo">J·A·R·V·I·S</div>
-      <div class="logo-sub">Just A Rather Very Intelligent System</div>
-    </div>
-
-    <div class="header-mid">
-      <div class="status-cluster">
-        <span class="status-dot offline" id="statusDot"></span>
-        <span id="statusLabel">OFFLINE</span>
-      </div>
-      <div class="scan-bar"></div>
-    </div>
-
-    <div class="header-right">
-      <div class="uptime-val" id="uptimeVal">--:--:--</div>
-      <div class="uptime-lbl">Laufzeit</div>
-    </div>
-  </header>
-
-  <!-- ── Main Grid ── -->
-  <main>
-
-    <!-- Panel 1: System Status -->
-    <section class="panel">
-      <div class="panel-header">Sys.Status</div>
-      <div class="panel-body">
-
-        <div class="stat-row">
-          <span class="stat-label">Status</span>
-          <span class="stat-val s-offline" id="sysStatus">OFFLINE</span>
-        </div>
-        <div class="stat-row">
-          <span class="stat-label">Modus</span>
-          <span class="stat-val" id="sysMode">—</span>
-        </div>
-        <div class="stat-row">
-          <span class="stat-label">Port</span>
-          <span class="stat-val">7777</span>
-        </div>
-        <div class="stat-row">
-          <span class="stat-label">Modell</span>
-          <span class="stat-val" style="font-size:10px">GPT-4o-mini</span>
-        </div>
-
-        <div class="divider"></div>
-
-        <div class="stat-row">
-          <span class="stat-label">Nachrichten</span>
-          <span class="big-num" id="statMsgs">0</span>
-        </div>
-        <div class="stat-row">
-          <span class="stat-label">Tool-Aufrufe</span>
-          <span class="big-num" id="statTools">0</span>
-        </div>
-
-        <div class="divider"></div>
-
-        <div class="task-label">Aktuelle Aufgabe</div>
-        <div class="task-box" id="taskBox">—</div>
-
-      </div>
-    </section>
-
-    <!-- Panel 2: Activity Log -->
-    <section class="panel">
-      <div class="panel-header">Activity.Log</div>
-      <div class="panel-body" id="actBody">
-        <div class="feed" id="feed"></div>
-      </div>
-    </section>
-
-    <!-- Panel 3: Calendar -->
-    <section class="panel">
-      <div class="panel-header">Calendar.Sync</div>
-      <div class="panel-body" id="calBody">
-        <div class="cal-msg" id="calMsg">Synchronisiere...</div>
-        <div id="calFeed"></div>
-      </div>
-    </section>
-
-  </main>
-
-  <!-- ── Footer ── -->
-  <footer>
-    <div class="footer-group">
-      <span class="foot-item">JARVIS v1.0</span>
-      <span class="foot-item">GPT-4o-mini + Claude Opus 4.7</span>
-    </div>
-    <div style="color:rgba(0,212,255,0.2); font-size:9px; letter-spacing:4px">COMMAND CENTER</div>
-    <div class="footer-group">
-      <span class="foot-item" id="wsIndicator">WS: GETRENNT</span>
-      <span class="foot-item" id="clockDisplay">--:--:--</span>
-    </div>
-  </footer>
+<div id="root"></div>
+<div id="tweaks-panel">
+  <div class="tweak-head">// TWEAKS</div>
+  <div class="tweak-body">
+    <label>
+      Accent Color
+      <select id="tw-accent" onchange="applyTweak()">
+        <option value="195">Cyan</option>
+        <option value="145">Green</option>
+        <option value="275">Purple</option>
+        <option value="60">Amber</option>
+      </select>
+    </label>
+    <label>
+      Layout Density
+      <select id="tw-density" onchange="applyTweak()">
+        <option value="normal">Normal</option>
+        <option value="compact">Compact</option>
+      </select>
+    </label>
+    <label style="flex-direction:row;align-items:center;gap:8px;">
+      <input type="checkbox" id="tw-glow" onchange="applyTweak()" checked>
+      Glow-Effekte
+    </label>
+    <label style="flex-direction:row;align-items:center;gap:8px;">
+      <input type="checkbox" id="tw-grid" onchange="applyTweak()" checked>
+      Grid-Hintergrund
+    </label>
+  </div>
 </div>
 
 <script>
-// ══════════════════════════════════════════════════════════════
-// CANVAS BACKGROUND — particle network
-// ══════════════════════════════════════════════════════════════
-const canvas = document.getElementById('bg');
-const ctx    = canvas.getContext('2d');
-let pts = [];
+  function applyTweak() {
+    const hue = document.getElementById('tw-accent').value;
+    const glow = document.getElementById('tw-glow').checked;
+    const grid = document.getElementById('tw-grid').checked;
+    const density = document.getElementById('tw-density').value;
+    const root = document.documentElement;
+    root.style.setProperty('--cyan', `oklch(0.75 0.14 ${hue})`);
+    root.style.setProperty('--cyan-dim', `oklch(0.55 0.10 ${hue})`);
+    root.style.setProperty('--cyan-faint', `oklch(0.75 0.14 ${hue} / 0.08)`);
+    root.style.setProperty('--border-glow', `oklch(0.28 0.06 ${hue})`);
+    document.body.style.backgroundImage = grid
+      ? `linear-gradient(rgba(0,200,255,0.015) 1px, transparent 1px),linear-gradient(90deg, rgba(0,200,255,0.015) 1px, transparent 1px)`
+      : 'none';
+    document.querySelectorAll('.panel-title').forEach(el => {
+      el.style.fontSize = density === 'compact' ? '8px' : '9px';
+    });
+  }
 
-function resizeCanvas() {
-  canvas.width  = window.innerWidth;
-  canvas.height = window.innerHeight;
-  const n = Math.min(Math.floor(canvas.width * canvas.height / 13000), 110);
-  pts = Array.from({length: n}, () => ({
-    x: Math.random() * canvas.width,
-    y: Math.random() * canvas.height,
-    vx: (Math.random() - 0.5) * 0.22,
-    vy: (Math.random() - 0.5) * 0.22,
-    r: Math.random() * 1.4 + 0.4,
+  window.addEventListener('message', e => {
+    if (e.data?.type === '__activate_edit_mode') {
+      document.getElementById('tweaks-panel').classList.add('visible');
+    } else if (e.data?.type === '__deactivate_edit_mode') {
+      document.getElementById('tweaks-panel').classList.remove('visible');
+    }
+  });
+  window.parent.postMessage({ type: '__edit_mode_available' }, '*');
+</script>
+
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+// ─── STATIC DATA (unchanged from original) ───────────────────────────────────
+
+const MCP_SERVERS = [
+  { id: 1, name: 'filesystem', desc: 'Local FS Access', status: 'connected', latency: 2, tools: 8 },
+  { id: 2, name: 'github', desc: 'GitHub API v4', status: 'connected', latency: 142, tools: 12 },
+  { id: 3, name: 'brave-search', desc: 'Web Search', status: 'connected', latency: 88, tools: 3 },
+  { id: 4, name: 'memory', desc: 'KV Store', status: 'connected', latency: 1, tools: 5 },
+  { id: 5, name: 'postgres', desc: 'DB Connector', status: 'idle', latency: 34, tools: 6 },
+  { id: 6, name: 'slack', desc: 'Slack Workspace', status: 'error', latency: null, tools: 7 },
+];
+
+const TOKEN_HISTORY = [
+  { day: 'Mo', input: 42000, output: 18000, cached: 12000 },
+  { day: 'Di', input: 68000, output: 31000, cached: 24000 },
+  { day: 'Mi', input: 55000, output: 22000, cached: 18000 },
+  { day: 'Do', input: 91000, output: 44000, cached: 31000 },
+  { day: 'Fr', input: 78000, output: 35000, cached: 28000 },
+  { day: 'Sa', input: 23000, output: 9000, cached: 7000 },
+  { day: 'So', input: 14000, output: 5000, cached: 3000 },
+];
+
+const MONTHLY_LIMIT = 10000000;
+const MONTHLY_USED  = 3_420_000;
+
+const JARVIS_RESPONSES = [
+  "Analysiere die Anfrage... Ich habe relevante Kontext aus dem Memory-Server abgerufen. Hier ist meine Auswertung:",
+  "Verstanden. Führe parallele Tool-Calls aus: filesystem.read + memory.query. Ergebnis liegt vor.",
+  "Interessante Frage. Ich durchsuche mit brave-search nach aktuellen Daten und kombiniere das mit meinem Wissen.",
+  "Aufgabe erkannt. Ich zerlege das in 3 Teilschritte und arbeite sie sequenziell ab.",
+  "GitHub-Repository wird analysiert... 14 Commits seit gestern, 2 offene PRs. Soll ich einen Summary erstellen?",
+];
+
+const INIT_MESSAGES = [
+  { id: 1, role: 'system', content: 'System initialisiert. 4 MCP-Server verbunden. Bereit.', ts: '09:41' },
+  { id: 2, role: 'assistant', content: 'Guten Morgen. Alle Systeme online. Ich habe 3 neue GitHub-Benachrichtigungen und 2 offene Aufgaben aus dem Speicher geladen. Womit kann ich beginnen?', ts: '09:41' },
+  { id: 3, role: 'user', content: 'Zeig mir den Status der letzten Deployments.', ts: '09:43' },
+  { id: 4, role: 'assistant', content: 'Rufe GitHub Actions ab...\n\n✓ prod/frontend — deployed 14:32 — OK\n✓ prod/api — deployed 13:18 — OK\n⚠ staging/ml-service — deployed 11:05 — Health-Check schlägt fehl\n\nDer ML-Service zeigt erhöhte Memory-Nutzung (87%). Soll ich die Logs analysieren?', ts: '09:43', tools: ['github.list_workflows', 'github.get_run'] },
+];
+
+// ─── REAL-DATA HOOKS ──────────────────────────────────────────────────────────
+
+function fmtMsgTime(iso) {
+  const d = new Date(iso);
+  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+function useJarvisWS() {
+  const [jarvisState, setJarvisState] = useState({
+    status: 'offline', mode: 'text', current_task: null,
+    uptime: 0, activity_log: [],
+    stats: { total_messages: 0, total_tool_calls: 0 },
+  });
+  const [connected, setConnected] = useState(false);
+  const wsRef    = useRef(null);
+  const retryRef = useRef(null);
+
+  const connect = useCallback(() => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) return;
+    const ws = new WebSocket(`ws://${location.host}/ws`);
+    wsRef.current = ws;
+    ws.onopen  = () => { setConnected(true); clearTimeout(retryRef.current); };
+    ws.onmessage = ({ data }) => {
+      try {
+        const msg = JSON.parse(data);
+        if (msg.type === 'state_update') setJarvisState(msg.data);
+      } catch {}
+    };
+    ws.onclose = () => {
+      setConnected(false);
+      setJarvisState(s => ({ ...s, status: 'offline' }));
+      retryRef.current = setTimeout(connect, 3500);
+    };
+    ws.onerror = () => ws.close();
+  }, []);
+
+  useEffect(() => {
+    connect();
+    return () => { clearTimeout(retryRef.current); wsRef.current?.close(); };
+  }, [connect]);
+
+  return { jarvisState, connected };
+}
+
+function useCalendar() {
+  const [calEvents, setCalEvents] = useState([]);
+  const [calLoading, setCalLoading] = useState(true);
+  const [calError, setCalError]     = useState(null);
+
+  const load = useCallback(async () => {
+    setCalLoading(true); setCalError(null);
+    try {
+      const res  = await fetch('/api/calendar');
+      const data = await res.json();
+      if (data.success) setCalEvents(data.events);
+      else              setCalError(data.error);
+    } catch { setCalError('Netzwerkfehler'); }
+    finally { setCalLoading(false); }
+  }, []);
+
+  useEffect(() => {
+    load();
+    const id = setInterval(load, 60_000);
+    return () => clearInterval(id);
+  }, [load]);
+
+  return { calEvents, calLoading, calError };
+}
+
+// Convert WebSocket activity_log → chat message format
+function activityToMessages(log) {
+  return [...log].reverse().map(item => ({
+    id:    item.id,
+    role:  item.type === 'user'      ? 'user'
+         : item.type === 'assistant' ? 'assistant'
+         : item.type === 'tool'      ? 'tool'
+         : 'system',
+    content: item.content,
+    tool:  item.tool,
+    ts:    fmtMsgTime(item.timestamp),
   }));
 }
 
-function animBg() {
-  const W = canvas.width, H = canvas.height;
-  ctx.clearRect(0, 0, W, H);
-  for (const p of pts) {
-    p.x += p.vx; p.y += p.vy;
-    if (p.x < 0 || p.x > W) p.vx *= -1;
-    if (p.y < 0 || p.y > H) p.vy *= -1;
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, p.r, 0, 6.283);
-    ctx.fillStyle = 'rgba(0,212,255,0.32)';
-    ctx.fill();
-  }
-  for (let i = 0; i < pts.length; i++) {
-    for (let j = i + 1; j < pts.length; j++) {
-      const dx = pts[i].x - pts[j].x, dy = pts[i].y - pts[j].y;
-      const d  = Math.hypot(dx, dy);
-      if (d < 125) {
-        ctx.beginPath();
-        ctx.moveTo(pts[i].x, pts[i].y);
-        ctx.lineTo(pts[j].x, pts[j].y);
-        ctx.strokeStyle = `rgba(0,212,255,${(1 - d / 125) * 0.11})`;
-        ctx.lineWidth = 0.5;
-        ctx.stroke();
-      }
-    }
-  }
-  requestAnimationFrame(animBg);
-}
-resizeCanvas();
-animBg();
-window.addEventListener('resize', resizeCanvas);
+// ─── COMPONENTS (original, unchanged) ────────────────────────────────────────
 
-// ══════════════════════════════════════════════════════════════
-// STATE & UTILITIES
-// ══════════════════════════════════════════════════════════════
-let serverUptime = 0;
-let uptimeBase   = Date.now();
-let currentStatus = 'offline';
-const seenIds    = new Set();
+function Header({ time, cpuLoad, memLoad, jarvisStatus, wsConnected }) {
+  // Map real JARVIS status → dot colour & label
+  const statusDot   = jarvisStatus === 'idle'       ? 'green'
+                    : jarvisStatus === 'processing'  ? 'amber'
+                    : 'red';
+  const statusLabel = jarvisStatus === 'idle'       ? 'ONLINE'
+                    : jarvisStatus === 'processing'  ? 'WORKING'
+                    : 'OFFLINE';
 
-function esc(s) {
-  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
+  return (
+    <header style={{
+      display: 'flex', alignItems: 'center', gap: '24px',
+      padding: '0 16px', height: '44px', flexShrink: 0,
+      background: 'var(--bg-2)',
+      borderBottom: '1px solid var(--border)',
+      position: 'relative',
+    }}>
+      {/* Logo */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: '160px' }}>
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+          <polygon points="10,1 18,6 18,14 10,19 2,14 2,6" stroke="var(--cyan)" strokeWidth="1.2" fill="none"/>
+          <polygon points="10,5 14,7.5 14,12.5 10,15 6,12.5 6,7.5" fill="var(--cyan)" opacity="0.15"/>
+          <circle cx="10" cy="10" r="2" fill="var(--cyan)"/>
+        </svg>
+        <span style={{ fontFamily: 'var(--mono)', fontWeight: 700, fontSize: '14px', letterSpacing: '0.15em', color: 'var(--cyan)' }} className="glow-cyan">
+          JARVIS
+        </span>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: '9px', color: 'var(--text-3)', letterSpacing: '0.1em' }}>v2.4.1</span>
+      </div>
 
-function fmtTime(iso) {
-  return new Date(iso).toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
-}
+      {/* Divider */}
+      <div style={{ width: '1px', height: '20px', background: 'var(--border)' }}/>
 
-function fmtUptime(s) {
-  s = Math.floor(s);
-  const h = String(Math.floor(s / 3600)).padStart(2, '0');
-  const m = String(Math.floor(s % 3600 / 60)).padStart(2, '0');
-  const sec = String(s % 60).padStart(2, '0');
-  return `${h}:${m}:${sec}`;
-}
+      {/* Status chips — first chip is now live */}
+      <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+        <StatusChip dot={statusDot} label={statusLabel} pulse={jarvisStatus === 'idle'} />
+        <StatusChip dot={wsConnected ? 'cyan' : 'dim'} label={wsConnected ? `${MCP_SERVERS.filter(s=>s.status==='connected').length} MCP` : 'WS OFFLINE'} />
+        <StatusChip dot="amber" label="GPT-4o" />
+      </div>
 
-function fmtCalDate(iso) {
-  if (!iso) return '—';
-  if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) {
-    return new Date(iso + 'T12:00:00').toLocaleDateString('de-DE',
-      {weekday:'short', day:'2-digit', month:'short'});
-  }
-  const d = new Date(iso);
-  return d.toLocaleDateString('de-DE', {weekday:'short', day:'2-digit', month:'short'})
-       + ' '
-       + d.toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'});
+      {/* Spacer */}
+      <div style={{ flex: 1 }}/>
+
+      {/* Metrics */}
+      <div style={{ display: 'flex', gap: '20px', alignItems: 'center', fontFamily: 'var(--mono)', fontSize: '10px', color: 'var(--text-2)' }}>
+        <MiniMetric label="CPU" val={cpuLoad} unit="%" color={cpuLoad > 80 ? 'var(--amber)' : 'var(--cyan)'} />
+        <MiniMetric label="MEM" val={memLoad} unit="%" color={memLoad > 80 ? 'var(--amber)' : 'var(--cyan)'} />
+        <div style={{ color: 'var(--text-3)' }}>|</div>
+        <span style={{ color: 'var(--text-1)' }}>{time}</span>
+        <span style={{ color: 'var(--text-3)', fontSize: '9px' }}>
+          {new Date().toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' })}
+        </span>
+      </div>
+    </header>
+  );
 }
 
-function isToday(iso) {
-  return new Date(iso).toDateString() === new Date().toDateString();
-}
-function isSoon(iso) {
-  return (new Date(iso) - new Date()) < 7 * 864e5;
-}
-
-// ══════════════════════════════════════════════════════════════
-// STATE UPDATE → DOM
-// ══════════════════════════════════════════════════════════════
-function applyState(data) {
-  const status = data.status || 'offline';
-  currentStatus = status;
-
-  const labels = {idle:'BEREIT', processing:'VERARBEITET', offline:'OFFLINE', reconnecting:'VERBINDET...'};
-  document.getElementById('statusDot').className   = `status-dot ${status}`;
-  document.getElementById('statusLabel').textContent = labels[status] || status.toUpperCase();
-
-  const sv = document.getElementById('sysStatus');
-  sv.textContent  = labels[status] || status.toUpperCase();
-  sv.className    = `stat-val s-${status}`;
-  document.getElementById('sysMode').textContent   = (data.mode || 'text').toUpperCase();
-  document.getElementById('statMsgs').textContent  = data.stats?.total_messages  ?? 0;
-  document.getElementById('statTools').textContent = data.stats?.total_tool_calls ?? 0;
-
-  const tb = document.getElementById('taskBox');
-  if (data.current_task) {
-    tb.textContent = data.current_task;
-    tb.className   = 'task-box active';
-  } else {
-    tb.textContent = '—';
-    tb.className   = 'task-box';
-  }
-
-  if (data.uptime != null) {
-    serverUptime = data.uptime;
-    uptimeBase   = Date.now();
-  }
-
-  renderFeed(data.activity_log || []);
-}
-
-// ══════════════════════════════════════════════════════════════
-// ACTIVITY FEED
-// ══════════════════════════════════════════════════════════════
-const TYPE_LABELS = {user:'NUTZER', assistant:'JARVIS', tool:'TOOL', system:'SYSTEM'};
-
-function makeFeedItem(item) {
-  const div  = document.createElement('div');
-  div.className  = `feed-item ${item.type}`;
-  div.dataset.id = item.id;
-  const toolSpan = item.tool
-    ? `<span class="feed-tool-name">${esc(item.tool)}</span>`
-    : '';
-  div.innerHTML = `
-    <div class="feed-meta">
-      <span class="feed-time">${fmtTime(item.timestamp)}</span>
-      <span class="feed-badge ${item.type}">${TYPE_LABELS[item.type] || item.type.toUpperCase()}</span>
-      ${toolSpan}
+function StatusChip({ dot, label, pulse }) {
+  const colors = { green: 'var(--green)', cyan: 'var(--cyan)', amber: 'var(--amber)', red: 'var(--red)', dim: 'var(--text-3)' };
+  const c = colors[dot] || 'var(--text-3)';
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontFamily: 'var(--mono)', fontSize: '9px', letterSpacing: '0.1em', color: c }}>
+      <div className={pulse ? 'pulse' : ''} style={{ width: 5, height: 5, borderRadius: '50%', background: c, boxShadow: dot !== 'dim' ? `0 0 5px ${c}` : 'none' }}/>
+      {label}
     </div>
-    <div class="feed-content">${esc(item.content)}</div>
-  `;
-  return div;
+  );
 }
 
-function renderFeed(log) {
-  const feed = document.getElementById('feed');
-  const body = document.getElementById('actBody');
-  const atTop = body.scrollTop < 30;
+function MiniMetric({ label, val, unit, color }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+      <span style={{ color: 'var(--text-3)' }}>{label}</span>
+      <span style={{ color }}>{val}{unit}</span>
+    </div>
+  );
+}
 
-  // Initial render
-  if (seenIds.size === 0 && log.length > 0) {
-    log.forEach(item => {
-      seenIds.add(item.id);
-      feed.appendChild(makeFeedItem(item));
-    });
-    return;
+// ─── LEFT PANEL ──────────────────────────────────────────────────────────────
+
+function LeftPanel({ activeServer, setActiveServer }) {
+  return (
+    <div style={{ width: '220px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      <MCPPanel activeServer={activeServer} setActiveServer={setActiveServer} />
+      <SystemPanel />
+    </div>
+  );
+}
+
+function MCPPanel({ activeServer, setActiveServer }) {
+  return (
+    <div className="panel" style={{ flex: '0 0 auto' }}>
+      <div className="panel-title">
+        <div className="dot dot-cyan pulse"/>
+        <span className="bracket">[</span>MCP SERVERS<span className="bracket">]</span>
+      </div>
+      <div style={{ padding: '6px 0' }}>
+        {MCP_SERVERS.map(srv => (
+          <ServerRow key={srv.id} srv={srv} active={activeServer===srv.id} onClick={()=>setActiveServer(activeServer===srv.id?null:srv.id)} />
+        ))}
+      </div>
+      <div style={{ padding: '6px 12px 8px', borderTop: '1px solid var(--border)', fontFamily: 'var(--mono)', fontSize: '9px', color: 'var(--text-3)', display: 'flex', justifyContent: 'space-between' }}>
+        <span>{MCP_SERVERS.reduce((a,s)=>a+s.tools,0)} tools total</span>
+        <span style={{ color: 'var(--cyan)' }}>{MCP_SERVERS.filter(s=>s.status==='connected').length}/{MCP_SERVERS.length}</span>
+      </div>
+    </div>
+  );
+}
+
+function ServerRow({ srv, active, onClick }) {
+  const statusColor = srv.status === 'connected' ? 'var(--green)' : srv.status === 'idle' ? 'var(--amber)' : 'var(--red)';
+  const statusLabel = srv.status === 'connected' ? 'OK' : srv.status === 'idle' ? 'IDLE' : 'ERR';
+  return (
+    <div onClick={onClick} style={{
+      padding: '5px 12px',
+      cursor: 'pointer',
+      background: active ? 'var(--cyan-faint)' : 'transparent',
+      borderLeft: active ? '2px solid var(--cyan)' : '2px solid transparent',
+      transition: 'all 0.15s',
+      display: 'flex', flexDirection: 'column', gap: '2px',
+    }}
+    onMouseEnter={e=>e.currentTarget.style.background='var(--bg-3)'}
+    onMouseLeave={e=>e.currentTarget.style.background=active?'var(--cyan-faint)':'transparent'}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: '11px', color: 'var(--text-1)' }}>{srv.name}</span>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: '8px', color: statusColor, letterSpacing: '0.08em' }}>{statusLabel}</span>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: '9px', color: 'var(--text-3)' }}>{srv.desc}</span>
+        {srv.latency !== null && (
+          <span style={{ fontFamily: 'var(--mono)', fontSize: '9px', color: srv.latency > 100 ? 'var(--amber-dim)' : 'var(--text-3)' }}>{srv.latency}ms</span>
+        )}
+      </div>
+      {active && (
+        <div style={{ marginTop: '4px', padding: '4px 0', borderTop: '1px solid var(--border)', fontFamily: 'var(--mono)', fontSize: '9px', color: 'var(--cyan)', animation: 'fadeIn 0.2s ease' }}>
+          {srv.tools} tools verfügbar
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SystemPanel() {
+  const [cpu, setCpu] = useState(34);
+  const [mem, setMem] = useState(62);
+  const [net, setNet] = useState(12);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setCpu(v => Math.min(95, Math.max(5, v + (Math.random()-0.5)*8)));
+      setMem(v => Math.min(95, Math.max(40, v + (Math.random()-0.5)*4)));
+      setNet(v => Math.min(100, Math.max(0, v + (Math.random()-0.5)*15)));
+    }, 2000);
+    return () => clearInterval(id);
+  }, []);
+
+  return (
+    <div className="panel" style={{ flex: 1 }}>
+      <div className="panel-title">
+        <span className="bracket">[</span>SYSTEM<span className="bracket">]</span>
+      </div>
+      <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <ResourceBar label="CPU" val={Math.round(cpu)} color={cpu>80?'var(--amber)':'var(--cyan)'} />
+        <ResourceBar label="MEM" val={Math.round(mem)} color={mem>80?'var(--amber)':'var(--cyan)'} />
+        <ResourceBar label="NET" val={Math.round(net)} color='var(--green)' />
+      </div>
+      <div style={{ padding: '0 12px 10px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+        <SysRow label="Model" val="gpt-4o" />
+        <SysRow label="Context" val="128k" />
+        <SysRow label="Temp" val="0.7" />
+        <SysRow label="Uptime" val="4h 23m" />
+      </div>
+    </div>
+  );
+}
+
+function ResourceBar({ label, val, color }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--mono)', fontSize: '9px' }}>
+        <span style={{ color: 'var(--text-2)' }}>{label}</span>
+        <span style={{ color }}>{val}%</span>
+      </div>
+      <div style={{ height: '4px', background: 'var(--bg-3)', borderRadius: '2px', overflow: 'hidden' }}>
+        <div style={{ width: `${val}%`, height: '100%', background: color, borderRadius: '2px', boxShadow: `0 0 6px ${color}`, transition: 'width 0.6s ease' }}/>
+      </div>
+    </div>
+  );
+}
+
+function SysRow({ label, val }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--mono)', fontSize: '10px' }}>
+      <span style={{ color: 'var(--text-3)' }}>{label}</span>
+      <span style={{ color: 'var(--text-1)' }}>{val}</span>
+    </div>
+  );
+}
+
+// ─── URL RENDERER ────────────────────────────────────────────────────────────
+
+function renderContent(content, openViewer) {
+  const urlRe = /https?:\/\/[^\s\])"'<>\\]+/g;
+  const parts = [];
+  let last = 0, m;
+  while ((m = urlRe.exec(content)) !== null) {
+    if (m.index > last) parts.push(content.slice(last, m.index));
+    parts.push({ url: m[0] });
+    last = m.index + m[0].length;
   }
+  if (last < content.length) parts.push(content.slice(last));
+  if (parts.length === 1 && typeof parts[0] === 'string') return content;
+  return parts.map((p, i) => {
+    if (typeof p === 'string') return <span key={i}>{p}</span>;
+    return (
+      <span key={i} style={{ display: 'inline-flex', alignItems: 'baseline', gap: '3px', flexWrap: 'wrap' }}>
+        <span style={{ color: 'var(--cyan)', wordBreak: 'break-all' }}>{p.url}</span>
+        {openViewer && (
+          <button
+            onClick={() => openViewer(p.url)}
+            style={{
+              background: 'var(--cyan-faint)', border: '1px solid var(--cyan-dim)',
+              color: 'var(--cyan)', borderRadius: '2px', padding: '1px 5px',
+              fontFamily: 'var(--mono)', fontSize: '8px', cursor: 'pointer',
+              letterSpacing: '0.08em', flexShrink: 0, lineHeight: 1.4,
+            }}
+          >↗ ÖFFNEN</button>
+        )}
+      </span>
+    );
+  });
+}
 
-  // Incremental: find new items (log is newest-first)
-  const newItems = log.filter(item => !seenIds.has(item.id));
-  if (newItems.length === 0) return;
+// ─── VIEWER ───────────────────────────────────────────────────────────────────
 
-  // Prepend in correct order: iterate reversed so newest ends up at top
-  [...newItems].reverse().forEach(item => {
-    seenIds.add(item.id);
-    feed.insertBefore(makeFeedItem(item), feed.firstChild);
+function TextFileViewer({ path }) {
+  const [content, setContent] = useState(null);
+  const [err, setErr] = useState(null);
+  useEffect(() => {
+    setContent(null); setErr(null);
+    fetch(`/api/view/file?path=${encodeURIComponent(path)}`)
+      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.text(); })
+      .then(setContent)
+      .catch(e => setErr(e.message));
+  }, [path]);
+  if (err) return (
+    <div style={{ padding: '24px', fontFamily: 'var(--mono)', fontSize: '12px', color: 'var(--red)', textAlign: 'center' }}>
+      Fehler: {err}
+    </div>
+  );
+  if (!content) return (
+    <div style={{ padding: '24px', fontFamily: 'var(--mono)', fontSize: '11px', color: 'var(--text-3)', textAlign: 'center', letterSpacing: '0.1em' }}>
+      Lade…
+    </div>
+  );
+  const lines = content.split('\n');
+  return (
+    <div style={{ height: '100%', overflowY: 'auto', overflowX: 'auto' }}>
+      <table style={{ borderCollapse: 'collapse', minWidth: '100%' }}>
+        <tbody>
+          {lines.map((line, i) => (
+            <tr key={i} style={{ ':hover': { background: 'var(--bg-3)' } }}>
+              <td style={{
+                padding: '1px 12px 1px 16px', fontFamily: 'var(--mono)', fontSize: '11px',
+                color: 'var(--text-3)', textAlign: 'right', userSelect: 'none',
+                borderRight: '1px solid var(--border)', minWidth: '44px', verticalAlign: 'top',
+                lineHeight: '1.7',
+              }}>{i + 1}</td>
+              <td style={{
+                padding: '1px 16px', fontFamily: 'var(--mono)', fontSize: '12px',
+                color: 'var(--text-1)', whiteSpace: 'pre', lineHeight: '1.7',
+              }}>{line}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function ViewerPanel({ viewer, onClose }) {
+  const [loading, setLoading] = useState(true);
+  const iframeRef = useRef(null);
+  const { type, src, title } = viewer;
+
+  useEffect(() => { setLoading(true); }, [src]);
+
+  const typeLabel = type === 'url' ? 'WEB' : type === 'pdf' ? 'PDF' : 'TEXT';
+  const typeColor = type === 'url' ? 'var(--cyan)' : type === 'pdf' ? 'var(--red)' : 'var(--green)';
+
+  const iframeSrc = type === 'url'
+    ? `/api/proxy?url=${encodeURIComponent(src)}`
+    : `/api/view/file?path=${encodeURIComponent(src)}`;
+
+  return (
+    <div className="panel" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: '280px', animation: 'slideIn 0.2s ease' }}>
+      {/* Toolbar */}
+      <div className="panel-title" style={{ justifyContent: 'space-between', gap: '8px' }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden' }}>
+          <span className="bracket">[</span>
+          <span style={{ color: typeColor, letterSpacing: '0.15em' }}>{typeLabel}</span>
+          <span className="bracket">]</span>
+          <span style={{ color: 'var(--text-2)', fontSize: '9px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '220px' }}>{title}</span>
+        </span>
+        <div style={{ display: 'flex', gap: '6px', flexShrink: 0, alignItems: 'center' }}>
+          {loading && type !== 'text' && (
+            <div style={{ width: 8, height: 8, borderRadius: '50%', border: '1px solid var(--cyan)', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }}/>
+          )}
+          {type === 'url' && (
+            <a href={src} target="_blank" rel="noreferrer" style={{
+              fontFamily: 'var(--mono)', fontSize: '9px', color: 'var(--text-3)',
+              textDecoration: 'none', letterSpacing: '0.08em',
+              padding: '2px 6px', border: '1px solid var(--border)', borderRadius: '3px',
+            }} title="Im Browser öffnen">↗</a>
+          )}
+          <button onClick={onClose} style={{
+            background: 'transparent', border: '1px solid var(--border)',
+            color: 'var(--text-3)', borderRadius: '3px', padding: '2px 7px',
+            fontFamily: 'var(--mono)', fontSize: '10px', cursor: 'pointer',
+            lineHeight: 1,
+          }} title="Schließen">✕</button>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div style={{ flex: 1, overflow: 'hidden', background: type === 'text' ? 'var(--bg-0)' : '#fff', position: 'relative' }}>
+        {type === 'text'
+          ? <TextFileViewer path={src} />
+          : (
+            <>
+              {loading && (
+                <div style={{
+                  position: 'absolute', inset: 0, display: 'flex', alignItems: 'center',
+                  justifyContent: 'center', background: 'var(--bg-0)', zIndex: 1,
+                  fontFamily: 'var(--mono)', fontSize: '10px', color: 'var(--text-3)',
+                  letterSpacing: '0.1em', gap: '8px',
+                }}>
+                  <div style={{ width: 10, height: 10, borderRadius: '50%', border: '1px solid var(--cyan)', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }}/>
+                  Lade {typeLabel}…
+                </div>
+              )}
+              <iframe
+                ref={iframeRef}
+                src={iframeSrc}
+                onLoad={() => setLoading(false)}
+                style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
+                title={title}
+              />
+            </>
+          )
+        }
+      </div>
+    </div>
+  );
+}
+
+// ─── CHAT ────────────────────────────────────────────────────────────────────
+
+function ChatPanel({ liveMessages, openViewer, viewerOpen }) {
+  const [localMessages, setLocalMessages] = useState(INIT_MESSAGES);
+  const [input, setInput]   = useState('');
+  const [thinking, setThinking] = useState(false);
+  const [thinkText, setThinkText] = useState('');
+  const bottomRef = useRef(null);
+  const nextId    = useRef(5);
+
+  const messages = liveMessages !== null ? liveMessages : localMessages;
+
+  useEffect(() => {
+    if (bottomRef.current) {
+      bottomRef.current.parentElement.scrollTop = bottomRef.current.offsetTop;
+    }
+  }, [messages.length, thinking]);
+
+  const now = () => {
+    const d = new Date();
+    return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  };
+
+  const send = useCallback(async () => {
+    if (!input.trim() || thinking) return;
+    const text = input.trim();
+    setInput('');
+
+    // /view command — open viewer locally without sending to JARVIS
+    if (text.startsWith('/view ')) {
+      const target = text.slice(6).trim();
+      if (target && openViewer) openViewer(target);
+      return;
+    }
+
+    if (liveMessages !== null) {
+      setThinking(true);
+      setThinkText('Wird gesendet…');
+      try {
+        await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text }),
+        });
+      } finally {
+        setThinking(false);
+      }
+    } else {
+      const userMsg = { id: nextId.current++, role: 'user', content: text, ts: now() };
+      setLocalMessages(m => [...m, userMsg]);
+      setThinking(true);
+      const steps = ['Analysiere...', 'Tool-Calls werden vorbereitet...', 'Antwort wird generiert...'];
+      let i = 0;
+      setThinkText(steps[0]);
+      const tick = setInterval(() => { i++; if (i < steps.length) setThinkText(steps[i]); }, 600);
+      setTimeout(() => {
+        clearInterval(tick);
+        setThinking(false);
+        const resp = JARVIS_RESPONSES[Math.floor(Math.random()*JARVIS_RESPONSES.length)];
+        setLocalMessages(m => [...m, { id: nextId.current++, role: 'assistant', content: resp, ts: now(), tools: Math.random()>0.5?['memory.query','filesystem.read']:undefined }]);
+      }, 1800);
+    }
+  }, [input, thinking, liveMessages, openViewer]);
+
+  const isLive = liveMessages !== null;
+
+  return (
+    <div className="panel" style={{
+      display: 'flex', flexDirection: 'column', overflow: 'hidden',
+      flex: viewerOpen ? '0 0 320px' : 1,
+      transition: 'flex-basis 0.25s ease',
+    }}>
+      <div className="panel-title" style={{ justifyContent: 'space-between' }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span className="bracket">[</span>CHAT<span className="bracket">]</span>
+        </span>
+        <span style={{ color: isLive ? 'var(--green)' : 'var(--text-3)', fontSize: '9px' }}>
+          {isLive ? `● LIVE · ${messages.length} msgs` : `${messages.length} msgs`}
+        </span>
+      </div>
+
+      {/* Messages */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        {messages.length === 0 && (
+          <div style={{ textAlign: 'center', fontFamily: 'var(--mono)', fontSize: '10px', color: 'var(--text-3)', marginTop: '40px', letterSpacing: '0.1em' }}>
+            — Warte auf JARVIS-Aktivität —
+          </div>
+        )}
+        {messages.map(msg => <ChatMessage key={msg.id} msg={msg} openViewer={openViewer} />)}
+        {thinking && <ThinkingIndicator text={thinkText} />}
+        <div ref={bottomRef} />
+      </div>
+
+      {/* Input */}
+      <div style={{ padding: '10px 12px', borderTop: '1px solid var(--border)', display: 'flex', gap: '8px', alignItems: 'flex-end', background: 'var(--bg-2)' }}>
+        <div style={{ flex: 1, position: 'relative' }}>
+          <div style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', fontFamily: 'var(--mono)', fontSize: '11px', color: 'var(--cyan)', pointerEvents: 'none' }}>›</div>
+          <input
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && !e.shiftKey && send()}
+            placeholder="/view <url|pfad> oder Anfrage eingeben…"
+            style={{
+              width: '100%', background: 'var(--bg-3)',
+              border: '1px solid var(--border)',
+              borderColor: input ? 'var(--border-glow)' : 'var(--border)',
+              borderRadius: '4px', padding: '8px 10px 8px 24px',
+              fontFamily: 'var(--mono)', fontSize: '12px', color: 'var(--text-1)',
+              outline: 'none', transition: 'border-color 0.2s',
+              boxShadow: input ? '0 0 10px var(--cyan-faint)' : 'none',
+            }}
+          />
+        </div>
+        <button onClick={send} disabled={!input.trim() || thinking} style={{
+          background: input.trim() && !thinking ? 'var(--cyan-faint)' : 'transparent',
+          border: '1px solid',
+          borderColor: input.trim() && !thinking ? 'var(--cyan)' : 'var(--border)',
+          color: input.trim() && !thinking ? 'var(--cyan)' : 'var(--text-3)',
+          padding: '8px 14px', borderRadius: '4px',
+          fontFamily: 'var(--mono)', fontSize: '10px', letterSpacing: '0.1em',
+          cursor: input.trim() && !thinking ? 'pointer' : 'default',
+          transition: 'all 0.2s', flexShrink: 0,
+        }}>
+          {thinking ? '...' : 'SEND'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ChatMessage({ msg, openViewer }) {
+  const isUser   = msg.role === 'user';
+  const isSystem = msg.role === 'system';
+  const isTool   = msg.role === 'tool';
+
+  if (isSystem) return (
+    <div style={{ textAlign: 'center', fontFamily: 'var(--mono)', fontSize: '9px', color: 'var(--text-3)', letterSpacing: '0.1em', animation: 'fadeIn 0.3s ease' }}>
+      — {msg.content} —
+    </div>
+  );
+
+  if (isTool) return (
+    <div style={{ display: 'flex', justifyContent: 'center', animation: 'fadeIn 0.2s ease' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '3px 10px', background: 'var(--amber-faint)', border: '1px solid var(--amber-dim)', borderRadius: '4px' }}>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: '8px', color: 'var(--amber)', letterSpacing: '0.1em' }}>TOOL</span>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: '9px', padding: '1px 5px', background: 'var(--amber-faint)', border: '1px solid var(--amber-dim)', borderRadius: '3px', color: 'var(--amber)' }}>{msg.tool}</span>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: '9px', color: 'var(--text-3)' }}>{msg.ts}</span>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: isUser ? 'flex-end' : 'flex-start', animation: 'slideIn 0.25s ease' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexDirection: isUser ? 'row-reverse' : 'row' }}>
+        <div style={{
+          width: 22, height: 22, borderRadius: isUser ? '4px' : '50%',
+          background: isUser ? 'var(--bg-3)' : 'var(--cyan-faint)',
+          border: `1px solid ${isUser ? 'var(--border)' : 'var(--cyan-dim)'}`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontFamily: 'var(--mono)', fontSize: '9px',
+          color: isUser ? 'var(--text-2)' : 'var(--cyan)',
+        }}>
+          {isUser ? 'U' : 'J'}
+        </div>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: '9px', color: 'var(--text-3)' }}>{msg.ts}</span>
+        {!isUser && msg.tools && (
+          <div style={{ display: 'flex', gap: '4px' }}>
+            {msg.tools.map(t => (
+              <span key={t} style={{ fontFamily: 'var(--mono)', fontSize: '8px', padding: '1px 5px', background: 'var(--amber-faint)', border: '1px solid var(--amber-dim)', borderRadius: '3px', color: 'var(--amber)' }}>{t}</span>
+            ))}
+          </div>
+        )}
+      </div>
+      <div style={{
+        maxWidth: '85%', padding: '8px 12px',
+        background: isUser ? 'var(--bg-3)' : 'var(--bg-2)',
+        border: `1px solid ${isUser ? 'var(--border)' : 'var(--border-glow)'}`,
+        borderRadius: isUser ? '8px 2px 8px 8px' : '2px 8px 8px 8px',
+        fontFamily: 'var(--mono)', fontSize: '12px', lineHeight: '1.6',
+        color: 'var(--text-1)',
+        whiteSpace: 'pre-wrap',
+        boxShadow: isUser ? 'none' : '0 0 15px var(--cyan-faint)',
+      }}>
+        {renderContent(msg.content, openViewer)}
+      </div>
+    </div>
+  );
+}
+
+function ThinkingIndicator({ text }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', animation: 'fadeIn 0.2s ease' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+        <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--cyan-faint)', border: '1px solid var(--cyan-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--mono)', fontSize: '9px', color: 'var(--cyan)' }}>J</div>
+      </div>
+      <div style={{ maxWidth: '60%', padding: '8px 12px', background: 'var(--bg-2)', border: '1px solid var(--border-glow)', borderRadius: '2px 8px 8px 8px', boxShadow: '0 0 15px var(--cyan-faint)' }}>
+        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '3px' }}>
+            {[0,1,2].map(i => (
+              <div key={i} style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--cyan)', animation: `pulse 1.2s ease-in-out ${i*0.2}s infinite` }}/>
+            ))}
+          </div>
+          <span style={{ fontFamily: 'var(--mono)', fontSize: '10px', color: 'var(--text-3)' }}>{text}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── RIGHT PANEL ─────────────────────────────────────────────────────────────
+
+function RightPanel({ calEvents, calLoading, calError }) {
+  return (
+    <div style={{ width: '240px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      <CalendarPanel calEvents={calEvents} calLoading={calLoading} calError={calError} />
+      <TokenPanel />
+    </div>
+  );
+}
+
+function CalendarPanel({ calEvents, calLoading, calError }) {
+  const now   = new Date();
+  const year  = now.getFullYear();
+  const month = now.getMonth();
+  const monthNames = ['JAN','FEB','MRZ','APR','MAI','JUN','JUL','AUG','SEP','OKT','NOV','DEZ'];
+
+  const [selected, setSelected] = useState(now.getDate());
+
+  // Build day → events map from real API data
+  const events = {};
+  calEvents.forEach(ev => {
+    const d = new Date(ev.start.includes('T') ? ev.start : ev.start + 'T00:00:00');
+    if (d.getFullYear() === year && d.getMonth() === month) {
+      const day = d.getDate();
+      if (!events[day]) events[day] = [];
+      events[day].push({
+        t: ev.start.includes('T')
+          ? new Date(ev.start).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
+          : 'Ganztägig',
+        label:    ev.summary,
+        location: ev.location,
+        color:    d.toDateString() === now.toDateString() ? 'var(--cyan)' : 'var(--amber)',
+      });
+    }
   });
 
-  // Trim overflow
-  while (feed.children.length > 60) feed.removeChild(feed.lastChild);
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDay    = new Date(year, month, 1).getDay();
+  const startPad    = firstDay === 0 ? 6 : firstDay - 1;
+  const dayNames    = ['Mo','Di','Mi','Do','Fr','Sa','So'];
 
-  if (atTop) body.scrollTop = 0;
+  return (
+    <div className="panel" style={{ flex: '0 0 auto' }}>
+      <div className="panel-title">
+        <span className="bracket">[</span>KALENDER — {monthNames[month]} {year}<span className="bracket">]</span>
+      </div>
+
+      {calLoading && (
+        <div style={{ padding: '12px', fontFamily: 'var(--mono)', fontSize: '9px', color: 'var(--text-3)', textAlign: 'center', letterSpacing: '0.1em' }}>
+          Synchronisiere…
+        </div>
+      )}
+      {calError && !calLoading && (
+        <div style={{ padding: '8px 12px', fontFamily: 'var(--mono)', fontSize: '9px', color: 'var(--red)', textAlign: 'center' }}>
+          {calError}
+        </div>
+      )}
+
+      <div style={{ padding: '8px 10px' }}>
+        {/* Day headers */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', marginBottom: '4px' }}>
+          {dayNames.map(d => (
+            <div key={d} style={{ textAlign: 'center', fontFamily: 'var(--mono)', fontSize: '8px', color: 'var(--text-3)', padding: '2px 0' }}>{d}</div>
+          ))}
+        </div>
+        {/* Days */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: '2px' }}>
+          {Array(startPad).fill(null).map((_, i) => <div key={`pad-${i}`}/>)}
+          {Array.from({length: daysInMonth}, (_, i) => i+1).map(d => {
+            const isToday    = d === now.getDate();
+            const isSelected = d === selected;
+            const hasEvent   = !!events[d];
+            return (
+              <div key={d} onClick={() => setSelected(d)} style={{
+                textAlign: 'center', padding: '3px 0',
+                fontFamily: 'var(--mono)', fontSize: '10px',
+                borderRadius: '3px', cursor: 'pointer',
+                background: isSelected ? 'var(--cyan-faint)' : 'transparent',
+                color: isToday ? 'var(--cyan)' : 'var(--text-2)',
+                border: isToday ? '1px solid var(--cyan-dim)' : '1px solid transparent',
+                fontWeight: isToday ? 700 : 400,
+                position: 'relative',
+                transition: 'all 0.1s',
+              }}>
+                {d}
+                {hasEvent && <div style={{ position: 'absolute', bottom: '1px', left: '50%', transform: 'translateX(-50%)', width: '3px', height: '3px', borderRadius: '50%', background: events[d][0].color }}/>}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Events for selected day */}
+      {events[selected] ? (
+        <div style={{ borderTop: '1px solid var(--border)', padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          {events[selected].map((ev, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+              <div style={{ width: '2px', height: '22px', background: ev.color, borderRadius: '1px', flexShrink: 0, marginTop: '2px' }}/>
+              <div>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: '9px', color: 'var(--text-3)' }}>{ev.t}</div>
+                <div style={{ fontFamily: 'var(--sans)', fontSize: '11px', color: 'var(--text-1)' }}>{ev.label}</div>
+                {ev.location && <div style={{ fontFamily: 'var(--mono)', fontSize: '9px', color: 'var(--text-3)' }}>◈ {ev.location}</div>}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : !calLoading && (
+        <div style={{ borderTop: '1px solid var(--border)', padding: '8px 10px', fontFamily: 'var(--mono)', fontSize: '9px', color: 'var(--text-3)', textAlign: 'center' }}>
+          Keine Termine am {selected}.{String(month+1).padStart(2,'0')}.
+        </div>
+      )}
+    </div>
+  );
 }
 
-// ══════════════════════════════════════════════════════════════
-// CALENDAR
-// ══════════════════════════════════════════════════════════════
-async function loadCalendar() {
-  const msg  = document.getElementById('calMsg');
-  const feed = document.getElementById('calFeed');
-  msg.textContent = 'Synchronisiere...';
-  msg.className   = 'cal-msg';
-  msg.style.display = '';
-  feed.innerHTML  = '';
+function TokenPanel() {
+  const totalUsed  = MONTHLY_USED;
+  const totalLimit = MONTHLY_LIMIT;
+  const pct  = (totalUsed / totalLimit * 100).toFixed(1);
+  const maxDay = Math.max(...TOKEN_HISTORY.map(d => d.input + d.output));
+  const cost = (totalUsed / 1_000_000 * 5).toFixed(2);
 
-  try {
-    const res  = await fetch('/api/calendar');
-    const data = await res.json();
+  return (
+    <div className="panel" style={{ flex: 1 }}>
+      <div className="panel-title">
+        <span className="bracket">[</span>OPENAI TOKENS<span className="bracket">]</span>
+      </div>
+      <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
 
-    if (!data.success) {
-      msg.textContent = `Fehler: ${data.error}`;
-      msg.className   = 'cal-msg err';
-      return;
-    }
-    msg.style.display = 'none';
+        {/* Monthly usage */}
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--mono)', fontSize: '9px', marginBottom: '4px' }}>
+            <span style={{ color: 'var(--text-3)' }}>MONAT</span>
+            <span style={{ color: 'var(--cyan)' }}>{(totalUsed/1000).toFixed(0)}k / {(totalLimit/1000000).toFixed(0)}M</span>
+          </div>
+          <div style={{ height: '6px', background: 'var(--bg-3)', borderRadius: '3px', overflow: 'hidden' }}>
+            <div style={{ width: `${pct}%`, height: '100%', background: 'linear-gradient(90deg, var(--cyan-dim), var(--cyan))', borderRadius: '3px', boxShadow: '0 0 8px var(--cyan-faint)' }}/>
+          </div>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: '9px', color: 'var(--text-3)', marginTop: '3px' }}>{pct}% — ca. ${cost} diese Woche</div>
+        </div>
 
-    if (!data.events.length) {
-      msg.textContent   = 'Keine bevorstehenden Termine';
-      msg.style.display = '';
-      return;
-    }
+        {/* Stats */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+          <StatBox label="INPUT"  val={(TOKEN_HISTORY.reduce((a,d)=>a+d.input,0)/1000).toFixed(0)+'k'}  color="var(--cyan)" />
+          <StatBox label="OUTPUT" val={(TOKEN_HISTORY.reduce((a,d)=>a+d.output,0)/1000).toFixed(0)+'k'} color="var(--green)" />
+          <StatBox label="CACHED" val={(TOKEN_HISTORY.reduce((a,d)=>a+d.cached,0)/1000).toFixed(0)+'k'} color="var(--amber)" />
+          <StatBox label="KOSTEN" val={'$'+cost} color="var(--text-1)" />
+        </div>
 
-    data.events.forEach(ev => {
-      const today = isToday(ev.start);
-      const soon  = !today && isSoon(ev.start);
-      const cls   = today ? 'today' : (soon ? 'soon' : 'later');
-      const div   = document.createElement('div');
-      div.className = `cal-event ${cls}`;
-      div.innerHTML = `
-        <div class="cal-time">${fmtCalDate(ev.start)}</div>
-        <div class="cal-title">${esc(ev.summary)}</div>
-        ${ev.location ? `<div class="cal-loc">◈ ${esc(ev.location)}</div>` : ''}
-      `;
-      feed.appendChild(div);
-    });
+        {/* Daily chart */}
+        <div>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: '9px', color: 'var(--text-3)', marginBottom: '6px', letterSpacing: '0.1em' }}>7-TAGE VERLAUF</div>
+          <div style={{ display: 'flex', gap: '4px', alignItems: 'flex-end', height: '48px' }}>
+            {TOKEN_HISTORY.map((d, i) => {
+              const h = Math.round(((d.input + d.output) / maxDay) * 44);
+              const isToday = i === 4;
+              return (
+                <div key={d.day} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
+                  <div style={{ width: '100%', height: `${h}px`, background: isToday ? 'var(--cyan)' : 'var(--bg-3)', borderRadius: '2px 2px 0 0', boxShadow: isToday ? '0 0 8px var(--cyan-faint)' : 'none', transition: 'height 0.5s ease', position: 'relative', overflow: 'hidden' }}>
+                    {isToday && <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, var(--cyan), var(--cyan-dim))'}}/>}
+                  </div>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: '8px', color: isToday ? 'var(--cyan)' : 'var(--text-3)' }}>{d.day}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
 
-    document.getElementById('wsIndicator').textContent =
-      `CAL: ${new Date().toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'})}`;
-  } catch {
-    msg.textContent = 'Netzwerkfehler';
-    msg.className   = 'cal-msg err';
-    msg.style.display = '';
-  }
+        {/* Model breakdown */}
+        <div>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: '9px', color: 'var(--text-3)', marginBottom: '6px', letterSpacing: '0.1em' }}>MODELLE</div>
+          <div className="bar-container">
+            <div className="bar-row">
+              <span className="bar-label">gpt-4o</span>
+              <div className="bar-track"><div className="bar-fill" style={{ width: '68%', background: 'var(--cyan)' }}/></div>
+              <span className="bar-val">68%</span>
+            </div>
+            <div className="bar-row">
+              <span className="bar-label">gpt-4o-mini</span>
+              <div className="bar-track"><div className="bar-fill" style={{ width: '24%', background: 'var(--green)' }}/></div>
+              <span className="bar-val">24%</span>
+            </div>
+            <div className="bar-row">
+              <span className="bar-label">o1</span>
+              <div className="bar-track"><div className="bar-fill" style={{ width: '8%', background: 'var(--amber)' }}/></div>
+              <span className="bar-val">8%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
-// ══════════════════════════════════════════════════════════════
-// WEBSOCKET
-// ══════════════════════════════════════════════════════════════
-let ws, wsTimer;
-
-function connectWS() {
-  document.getElementById('wsIndicator').textContent = 'WS: VERBINDET...';
-  ws = new WebSocket(`ws://${location.host}/ws`);
-
-  ws.onopen = () => {
-    document.getElementById('wsIndicator').textContent = 'WS: ONLINE';
-    clearTimeout(wsTimer);
-  };
-
-  ws.onmessage = ({data}) => {
-    try {
-      const msg = JSON.parse(data);
-      if (msg.type === 'state_update') applyState(msg.data);
-    } catch {}
-  };
-
-  ws.onclose = () => {
-    document.getElementById('wsIndicator').textContent = 'WS: GETRENNT';
-    applyState({status: 'offline', mode: '—', current_task: null,
-                stats: {total_messages: 0, total_tool_calls: 0}, uptime: null});
-    wsTimer = setTimeout(connectWS, 3500);
-  };
-
-  ws.onerror = () => ws.close();
+function StatBox({ label, val, color }) {
+  return (
+    <div style={{ background: 'var(--bg-3)', border: '1px solid var(--border)', borderRadius: '4px', padding: '6px 8px' }}>
+      <div style={{ fontFamily: 'var(--mono)', fontSize: '8px', color: 'var(--text-3)', letterSpacing: '0.1em' }}>{label}</div>
+      <div style={{ fontFamily: 'var(--mono)', fontSize: '14px', fontWeight: 600, color, marginTop: '2px' }}>{val}</div>
+    </div>
+  );
 }
 
-// ══════════════════════════════════════════════════════════════
-// TICKERS
-// ══════════════════════════════════════════════════════════════
-setInterval(() => {
-  document.getElementById('clockDisplay').textContent =
-    new Date().toLocaleTimeString('de-DE');
+// ─── APP ─────────────────────────────────────────────────────────────────────
 
-  if (currentStatus !== 'offline') {
-    const elapsed = (Date.now() - uptimeBase) / 1000;
-    document.getElementById('uptimeVal').textContent = fmtUptime(serverUptime + elapsed);
-  } else {
-    document.getElementById('uptimeVal').textContent = '--:--:--';
-  }
-}, 1000);
+function App() {
+  const [time, setTime]   = useState('');
+  const [cpu, setCpu]     = useState(34);
+  const [mem, setMem]     = useState(62);
+  const [activeServer, setActiveServer] = useState(null);
+  const [viewer, setViewer] = useState(null);
 
-// ══════════════════════════════════════════════════════════════
-// INIT
-// ══════════════════════════════════════════════════════════════
-connectWS();
-loadCalendar();
-setInterval(loadCalendar, 60_000);
+  const { jarvisState, connected }          = useJarvisWS();
+  const { calEvents, calLoading, calError } = useCalendar();
+
+  const liveMessages = jarvisState.activity_log.length > 0
+    ? activityToMessages(jarvisState.activity_log)
+    : null;
+
+  const openViewer = useCallback((src) => {
+    const isUrl = /^https?:\/\//.test(src);
+    const isPdf = src.toLowerCase().endsWith('.pdf');
+    const type  = isUrl ? 'url' : isPdf ? 'pdf' : 'text';
+    const title = isUrl
+      ? (() => { try { return new URL(src).hostname; } catch { return src; } })()
+      : src.split(/[/\\]/).pop();
+    setViewer({ type, src, title });
+  }, []);
+
+  useEffect(() => {
+    const tick = () => {
+      const d = new Date();
+      setTime(`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`);
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setCpu(v => Math.min(95, Math.max(5, v + (Math.random()-0.5)*8)));
+      setMem(v => Math.min(95, Math.max(40, v + (Math.random()-0.5)*4)));
+    }, 2500);
+    return () => clearInterval(id);
+  }, []);
+
+  return (
+    <div id="root" style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+      <Header
+        time={time}
+        cpuLoad={Math.round(cpu)}
+        memLoad={Math.round(mem)}
+        jarvisStatus={jarvisState.status}
+        wsConnected={connected}
+      />
+      <div style={{ flex: 1, display: 'flex', gap: '8px', padding: '8px', overflow: 'hidden', minHeight: 0 }}>
+        <LeftPanel activeServer={activeServer} setActiveServer={setActiveServer} />
+        <ChatPanel liveMessages={liveMessages} openViewer={openViewer} viewerOpen={!!viewer} />
+        {viewer
+          ? <ViewerPanel viewer={viewer} onClose={() => setViewer(null)} />
+          : <RightPanel calEvents={calEvents} calLoading={calLoading} calError={calError} />
+        }
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
 </script>
 </body>
 </html>

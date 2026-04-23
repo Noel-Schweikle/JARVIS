@@ -1,5 +1,6 @@
 import asyncio
 import json
+import queue
 import threading
 from collections import deque
 from datetime import datetime
@@ -8,6 +9,7 @@ from datetime import datetime
 class JarvisState:
     def __init__(self):
         self._lock = threading.Lock()
+        self.message_queue: queue.Queue = queue.Queue()
         self.status = "offline"
         self.mode = "text"
         self.current_task = None
