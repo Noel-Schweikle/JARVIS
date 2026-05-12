@@ -1,4 +1,7 @@
 import asyncio
+import base64
+import json
+import logging
 import threading
 from datetime import datetime, timezone
 from pathlib import Path
@@ -8,8 +11,11 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
+import config
 from jarvis.state import jarvis_state
 
+logger = logging.getLogger(__name__)
+REALTIME_URL = "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview"
 BRAIN_DIR = Path.home() / ".jarvis" / "brain"
 
 STATIC_DIR = Path(__file__).parent / "static"
@@ -188,6 +194,172 @@ async def proxy_url(url: str):
             f'<a href="{url}" target="_blank" style="color:#0cf;font-size:12px">'
             f'Im Browser öffnen ↗</a></body></html>'
         )
+
+
+@app.websocket("/ws/voice")
+async def voice_websocket(websocket: WebSocket):
+    """Relay browser mic audio ↔ OpenAI Realtime API.
+
+    Browser sends: binary PCM16 chunks (24 kHz mono)
+    Server sends:  JSON text frames
+      {"type":"audio","data":"<base64 PCM16>"}  — play this
+      {"type":"speech_started"}
+      {"type":"speech_stopped"}
+      {"type":"transcript_delta","text":"..."}  — live streaming text
+      {"type":"user_transcript","text":"..."}   — finalized user turn
+      {"type":"jarvis_transcript","text":"..."}  — finalized JARVIS turn
+      {"type":"done"}
+      {"type":"error","message":"..."}
+    """
+    await websocket.accept()
+
+    import websockets as _ws
+
+    def _realtime_tools():
+        from jarvis.tools import TOOL_SCHEMAS
+        result = []
+        for s in TOOL_SCHEMAS:
+            if s.get("type") == "function":
+                f = s["function"]
+                result.append({
+                    "type": "function",
+                    "name": f["name"],
+                    "description": f.get("description", ""),
+                    "parameters": f.get("parameters", {}),
+                })
+        return result
+
+    def _system_prompt():
+        try:
+            from jarvis.agent import _load_system_prompt
+            return _load_system_prompt()
+        except Exception:
+            return "Du bist JARVIS, ein persönlicher KI-Assistent. Antworte immer auf Deutsch."
+
+    headers = {
+        "Authorization": f"Bearer {config.OPENAI_API_KEY}",
+        "OpenAI-Beta": "realtime=v1",
+    }
+
+    try:
+        async with _ws.connect(REALTIME_URL, additional_headers=headers) as oai:
+            # Configure Realtime session
+            await oai.send(json.dumps({
+                "type": "session.update",
+                "session": {
+                    "modalities": ["text", "audio"],
+                    "instructions": _system_prompt(),
+                    "voice": config.TTS_VOICE if config.TTS_VOICE in ("alloy","ash","ballad","coral","echo","sage","shimmer","verse") else "alloy",
+                    "input_audio_format": "pcm16",
+                    "output_audio_format": "pcm16",
+                    "input_audio_transcription": {"model": "whisper-1"},
+                    "turn_detection": {
+                        "type": "server_vad",
+                        "threshold": 0.5,
+                        "prefix_padding_ms": 300,
+                        "silence_duration_ms": 600,
+                    },
+                    "tools": _realtime_tools(),
+                    "tool_choice": "auto",
+                },
+            }))
+
+            _transcript_buf = []
+
+            async def _from_openai():
+                from jarvis.tools import execute_tool
+                async for raw in oai:
+                    msg = json.loads(raw)
+                    t = msg.get("type", "")
+
+                    if t == "input_audio_buffer.speech_started":
+                        await websocket.send_json({"type": "speech_started"})
+
+                    elif t == "input_audio_buffer.speech_stopped":
+                        await websocket.send_json({"type": "speech_stopped"})
+
+                    elif t == "conversation.item.input_audio_transcription.completed":
+                        text = msg.get("transcript", "").strip()
+                        if text:
+                            jarvis_state.add_activity("user", text)
+                            await websocket.send_json({"type": "user_transcript", "text": text})
+
+                    elif t == "response.audio.delta":
+                        audio_b64 = msg.get("delta", "")
+                        if audio_b64:
+                            await websocket.send_json({"type": "audio", "data": audio_b64})
+
+                    elif t == "response.audio_transcript.delta":
+                        delta = msg.get("delta", "")
+                        _transcript_buf.append(delta)
+                        await websocket.send_json({"type": "transcript_delta", "text": delta})
+
+                    elif t == "response.audio_transcript.done":
+                        full = msg.get("transcript", "".join(_transcript_buf)).strip()
+                        _transcript_buf.clear()
+                        if full:
+                            jarvis_state.add_activity("assistant", full)
+                        await websocket.send_json({"type": "jarvis_transcript", "text": full})
+
+                    elif t == "response.function_call_arguments.done":
+                        call_id = msg.get("call_id", "")
+                        name = msg.get("name", "")
+                        try:
+                            args = json.loads(msg.get("arguments", "{}"))
+                        except Exception:
+                            args = {}
+                        jarvis_state.add_activity("tool", str(args)[:200], tool=name)
+                        result = execute_tool(name, args)
+                        await oai.send(json.dumps({
+                            "type": "conversation.item.create",
+                            "item": {
+                                "type": "function_call_output",
+                                "call_id": call_id,
+                                "output": str(result),
+                            },
+                        }))
+                        await oai.send(json.dumps({"type": "response.create"}))
+
+                    elif t == "response.done":
+                        await websocket.send_json({"type": "done"})
+
+                    elif t == "error":
+                        logger.error("Realtime API error: %s", msg)
+                        await websocket.send_json({"type": "error", "message": str(msg.get("error", {}))})
+
+            async def _from_browser():
+                while True:
+                    try:
+                        data = await websocket.receive()
+                    except WebSocketDisconnect:
+                        break
+                    if "bytes" in data and data["bytes"]:
+                        await oai.send(json.dumps({
+                            "type": "input_audio_buffer.append",
+                            "audio": base64.b64encode(data["bytes"]).decode(),
+                        }))
+                    elif "text" in data:
+                        try:
+                            cmd = json.loads(data["text"])
+                            if cmd.get("type") == "commit":
+                                await oai.send(json.dumps({"type": "input_audio_buffer.commit"}))
+                                await oai.send(json.dumps({"type": "response.create"}))
+                        except Exception:
+                            pass
+
+            done, pending = await asyncio.wait(
+                [asyncio.create_task(_from_openai()), asyncio.create_task(_from_browser())],
+                return_when=asyncio.FIRST_COMPLETED,
+            )
+            for task in pending:
+                task.cancel()
+
+    except Exception as exc:
+        logger.exception("Voice WebSocket error")
+        try:
+            await websocket.send_json({"type": "error", "message": str(exc)})
+        except Exception:
+            pass
 
 
 @app.websocket("/ws")
