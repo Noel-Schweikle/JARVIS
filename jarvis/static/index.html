@@ -1,1459 +1,1136 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>JARVIS</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>JARVIS · Holographic HUD</title>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
 <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+
 <style>
-  :root {
-    --bg-0: oklch(0.065 0.018 240);
-    --bg-1: oklch(0.09 0.018 240);
-    --bg-2: oklch(0.12 0.016 240);
-    --bg-3: oklch(0.16 0.014 240);
-    --border: oklch(0.22 0.025 220);
-    --border-glow: oklch(0.28 0.06 195);
-    --cyan: oklch(0.75 0.14 195);
-    --cyan-dim: oklch(0.55 0.10 195);
-    --cyan-faint: oklch(0.75 0.14 195 / 0.08);
-    --amber: oklch(0.78 0.14 60);
-    --amber-dim: oklch(0.58 0.10 60);
-    --amber-faint: oklch(0.78 0.14 60 / 0.08);
-    --red: oklch(0.65 0.18 25);
-    --green: oklch(0.72 0.16 145);
-    --green-faint: oklch(0.72 0.16 145 / 0.1);
-    --text-1: oklch(0.92 0.01 220);
-    --text-2: oklch(0.65 0.02 220);
-    --text-3: oklch(0.42 0.02 220);
-    --mono: 'JetBrains Mono', monospace;
-    --sans: 'Space Grotesk', sans-serif;
-  }
+/* ============== Jarvis — Holographic HUD ============== */
+:root {
+  --bg-0: #050516;
+  --bg-1: #0a0a2a;
+  --ink: #f1f4ff;
+  --ink-dim: rgba(241,244,255,0.62);
+  --ink-faint: rgba(241,244,255,0.32);
+  --hue-a: #6fe6ff;
+  --hue-b: #b487ff;
+  --hue-c: #ff8fd0;
+  --hue-d: #8effc1;
+  --hue-e: #ffd58a;
+  --iris: linear-gradient(135deg,var(--hue-a) 0%,var(--hue-b) 35%,var(--hue-c) 65%,var(--hue-d) 100%);
+  --iris-2: linear-gradient(120deg,#6fe6ff 0%,#b487ff 50%,#ff8fd0 100%);
+  --glass-bg: rgba(255,255,255,0.045);
+  --glass-bg-strong: rgba(255,255,255,0.08);
+  --glass-border: rgba(255,255,255,0.14);
+  --glass-border-strong: rgba(255,255,255,0.22);
+  --glass-blur: 24px;
+  --font-display: "Space Grotesk","SF Pro Display",system-ui,sans-serif;
+  --font-body: "Inter",system-ui,sans-serif;
+  --font-mono: "JetBrains Mono","SF Mono",ui-monospace,monospace;
+}
+* { box-sizing: border-box; }
+html,body { margin:0;padding:0;height:100%;overflow:hidden;font-family:var(--font-body);color:var(--ink);background:var(--bg-0);-webkit-font-smoothing:antialiased;letter-spacing:.005em; }
+#root { height:100%;width:100%; }
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+.bg-stage { position:fixed;inset:0;z-index:0;overflow:hidden;background:radial-gradient(ellipse 80% 60% at 50% 40%,#1a0a3a 0%,transparent 60%),radial-gradient(ellipse 60% 50% at 10% 90%,#062032 0%,transparent 70%),radial-gradient(ellipse 50% 40% at 90% 10%,#2a0a3a 0%,transparent 70%),linear-gradient(180deg,#050516 0%,#08081f 50%,#050516 100%); }
+.bg-stage::before,.bg-stage::after { content:"";position:absolute;border-radius:50%;filter:blur(80px);opacity:.55;mix-blend-mode:screen; }
+.bg-stage::before { width:60vw;height:60vw;background:radial-gradient(circle,#5b3aff 0%,transparent 70%);top:-10vw;left:-10vw;animation:drift1 32s ease-in-out infinite alternate; }
+.bg-stage::after { width:55vw;height:55vw;background:radial-gradient(circle,#00b4d8 0%,transparent 70%);bottom:-15vw;right:-15vw;animation:drift2 38s ease-in-out infinite alternate; }
+@keyframes drift1 { 0%{transform:translate(0,0) scale(1)} 100%{transform:translate(18vw,12vw) scale(1.2)} }
+@keyframes drift2 { 0%{transform:translate(0,0) scale(1)} 100%{transform:translate(-15vw,-8vw) scale(1.15)} }
+.stars { position:absolute;inset:0;background-image:radial-gradient(1px 1px at 12% 18%,rgba(255,255,255,.7),transparent 50%),radial-gradient(1px 1px at 28% 76%,rgba(255,255,255,.5),transparent 50%),radial-gradient(1.5px 1.5px at 56% 32%,rgba(255,255,255,.8),transparent 50%),radial-gradient(1px 1px at 72% 58%,rgba(255,255,255,.4),transparent 50%),radial-gradient(1px 1px at 84% 14%,rgba(255,255,255,.7),transparent 50%),radial-gradient(1px 1px at 40% 48%,rgba(255,255,255,.6),transparent 50%),radial-gradient(1.5px 1.5px at 22% 38%,rgba(255,255,255,.9),transparent 50%);animation:twinkle 6s ease-in-out infinite alternate; }
+@keyframes twinkle { 0%{opacity:.6} 100%{opacity:1} }
+.grid-floor { position:absolute;inset:0;background-image:linear-gradient(rgba(111,230,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(111,230,255,.05) 1px,transparent 1px);background-size:64px 64px;mask-image:radial-gradient(ellipse 80% 60% at 50% 60%,black 30%,transparent 80%); }
 
-  body {
-    background: var(--bg-0);
-    color: var(--text-1);
-    font-family: var(--sans);
-    height: 100vh;
-    overflow: hidden;
-    background-image:
-      linear-gradient(rgba(0,200,255,0.015) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,200,255,0.015) 1px, transparent 1px);
-    background-size: 40px 40px;
-  }
+.glass { background:var(--glass-bg);-webkit-backdrop-filter:blur(var(--glass-blur)) saturate(140%);backdrop-filter:blur(var(--glass-blur)) saturate(140%);border:1px solid var(--glass-border);border-radius:18px;position:relative;overflow:hidden; }
+.glass::before { content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(255,255,255,.08) 0%,transparent 30%,transparent 70%,rgba(255,255,255,.04) 100%);border-radius:inherit; }
+.glass::after { content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;background:linear-gradient(135deg,rgba(111,230,255,.18),transparent 30%,transparent 70%,rgba(255,143,208,.14));mask:linear-gradient(black,black) content-box,linear-gradient(black,black);mask-composite:exclude;-webkit-mask-composite:xor;padding:1px;opacity:.6; }
+.glass-strong { background:var(--glass-bg-strong);border-color:var(--glass-border-strong); }
 
-  /* Scanline overlay */
-  body::after {
-    content: '';
-    position: fixed; inset: 0;
-    background: repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(0,0,0,0.03) 2px,
-      rgba(0,0,0,0.03) 4px
-    );
-    pointer-events: none;
-    z-index: 9999;
-  }
+.app-shell { position:relative;z-index:1;height:100vh;width:100vw;display:grid;grid-template-rows:64px 1fr 88px;gap:14px;padding:14px 18px; }
+.topbar { display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 22px;height:64px; }
+.brand { display:flex;align-items:center;gap:12px;font-family:var(--font-display);letter-spacing:.22em;font-weight:600;font-size:14px; }
+.brand-mark { width:28px;height:28px;border-radius:8px;background:var(--iris);display:grid;place-items:center;font-family:var(--font-display);font-weight:700;color:#050516;box-shadow:0 0 24px rgba(111,230,255,.4),inset 0 0 12px rgba(255,255,255,.4); }
+.greet { text-align:center;font-family:var(--font-display);font-size:14px;letter-spacing:.16em;color:var(--ink-dim);text-transform:uppercase; }
+.greet b { background:var(--iris);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:600; }
+.status { display:flex;justify-content:flex-end;gap:18px;align-items:center;font-family:var(--font-mono);font-size:11px;color:var(--ink-dim);text-transform:uppercase;letter-spacing:.12em; }
+.status .dot { display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--hue-d);margin-right:6px;box-shadow:0 0 12px var(--hue-d);animation:pulse-dot 2s ease-in-out infinite; }
+.status .dot.offline { background:rgba(255,100,100,.8);box-shadow:0 0 12px rgba(255,100,100,.5); }
+.status .dot.processing { background:var(--hue-e);box-shadow:0 0 12px var(--hue-e); }
+@keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:.5} }
 
-  #root { height: 100vh; display: flex; flex-direction: column; }
+.stage { position:relative;display:grid;grid-template-columns:320px 1fr 320px;gap:14px;min-height:0; }
+.rail { display:flex;flex-direction:column;gap:10px;min-height:0;overflow-y:auto;scrollbar-width:thin; }
+.rail-card { padding:12px 16px;cursor:pointer;transition:transform .25s ease,background .25s ease,border-color .25s ease;flex-shrink:0; }
+.rail-card:hover { background:var(--glass-bg-strong);border-color:var(--glass-border-strong);transform:translateY(-2px); }
+.rail-card .ttl { font-family:var(--font-display);font-size:10px;letter-spacing:.18em;color:var(--ink-faint);text-transform:uppercase;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center; }
+.rail-card .ttl span:first-child { display:flex;align-items:center;gap:8px; }
+.rail-card .num { font-family:var(--font-display);font-size:22px;font-weight:500;letter-spacing:-.01em;background:var(--iris);-webkit-background-clip:text;background-clip:text;color:transparent;line-height:1; }
+.rail-card .sub { font-size:11px;color:var(--ink-dim);margin-top:4px;line-height:1.4; }
 
-  .panel {
-    background: var(--bg-1);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    position: relative;
-    overflow: hidden;
-  }
-  .panel::before {
-    content: '';
-    position: absolute; top: 0; left: 0; right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--cyan-dim), transparent);
-    opacity: 0.4;
-  }
+.center { position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:0; }
+.orb-wrap { position:relative;width:100%;flex:1;display:flex;align-items:center;justify-content:center;min-height:0; }
+.orb-canvas { width:420px;height:420px;max-width:80%;max-height:80%; }
+.orb-rings { position:absolute;inset:0;pointer-events:none;display:grid;place-items:center; }
+.orb-rings .ring { position:absolute;border:1px solid rgba(255,255,255,.08);border-radius:50%;animation:ring-rot 40s linear infinite; }
+.orb-rings .ring.r1 { width:520px;height:520px;border-color:rgba(111,230,255,.16); }
+.orb-rings .ring.r2 { width:640px;height:640px;border-color:rgba(180,135,255,.12);animation-duration:60s;animation-direction:reverse; }
+.orb-rings .ring.r3 { width:760px;height:760px;border-color:rgba(255,143,208,.10);animation-duration:90s; }
+.orb-rings .ring::before { content:"";position:absolute;top:50%;left:-1px;width:8px;height:8px;border-radius:50%;background:var(--hue-a);box-shadow:0 0 16px var(--hue-a);transform:translateY(-50%); }
+.orb-rings .ring.r2::before { background:var(--hue-b);box-shadow:0 0 16px var(--hue-b); }
+.orb-rings .ring.r3::before { background:var(--hue-c);box-shadow:0 0 16px var(--hue-c); }
+@keyframes ring-rot { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
 
-  .panel-title {
-    font-family: var(--mono);
-    font-size: 9px;
-    font-weight: 600;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: var(--cyan);
-    padding: 8px 12px 6px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    background: var(--bg-2);
-    flex-shrink: 0;
-  }
+.orb-caption { text-align:center;margin-top:12px; }
+.orb-caption .state { font-family:var(--font-mono);font-size:11px;letter-spacing:.2em;color:var(--ink-faint);text-transform:uppercase; }
+.orb-caption .said { font-family:var(--font-display);font-size:18px;color:var(--ink);margin-top:6px;min-height:1.4em;max-width:600px; }
 
-  .panel-title .bracket { color: var(--text-3); }
+.composer { position:relative;z-index:2;display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:12px 16px;height:88px; }
+.composer .mic-btn,.composer .send-btn { width:56px;height:56px;border-radius:50%;display:grid;place-items:center;background:var(--glass-bg-strong);border:1px solid var(--glass-border);cursor:pointer;color:var(--ink);transition:all .2s ease;position:relative; }
+.composer .mic-btn:hover,.composer .send-btn:hover { border-color:var(--glass-border-strong);transform:translateY(-1px); }
+.composer .mic-btn.active { background:var(--iris);color:#050516;box-shadow:0 0 32px rgba(111,230,255,.5);animation:mic-pulse 1.4s ease-in-out infinite; }
+@keyframes mic-pulse { 0%,100%{box-shadow:0 0 32px rgba(111,230,255,.5)} 50%{box-shadow:0 0 48px rgba(180,135,255,.7)} }
+.composer input { background:transparent;border:none;outline:none;color:var(--ink);font-family:var(--font-body);font-size:16px;width:100%;padding:0 12px; }
+.composer input::placeholder { color:var(--ink-faint);font-style:italic; }
 
-  .glow-cyan { text-shadow: 0 0 12px var(--cyan); }
-  .glow-amber { text-shadow: 0 0 12px var(--amber); }
+.panel-backdrop { position:fixed;inset:0;background:rgba(5,5,22,.55);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);z-index:10;display:grid;place-items:center;animation:fade-in .25s ease; }
+@keyframes fade-in { from{opacity:0} to{opacity:1} }
+.panel { width:min(1180px,92vw);height:min(760px,88vh);padding:0;display:grid;grid-template-rows:56px 1fr;animation:panel-in .3s cubic-bezier(.2,.9,.3,1.2); }
+@keyframes panel-in { from{opacity:0;transform:scale(.96) translateY(8px)} to{opacity:1;transform:scale(1) translateY(0)} }
+.panel-header { display:grid;grid-template-columns:auto 1fr auto;align-items:center;padding:0 20px;gap:14px;border-bottom:1px solid var(--glass-border);z-index:1; }
+.panel-header .badge { width:32px;height:32px;border-radius:10px;background:var(--iris);display:grid;place-items:center;color:#050516;box-shadow:0 0 18px rgba(111,230,255,.4); }
+.panel-header .title { font-family:var(--font-display);font-size:16px;letter-spacing:.05em; }
+.panel-header .title small { display:block;font-family:var(--font-mono);font-size:10px;color:var(--ink-faint);letter-spacing:.18em;text-transform:uppercase;margin-top:2px; }
+.panel-header .close { width:36px;height:36px;border-radius:10px;background:var(--glass-bg);border:1px solid var(--glass-border);color:var(--ink);cursor:pointer;display:grid;place-items:center; }
+.panel-header .close:hover { background:var(--glass-bg-strong); }
+.panel-body { overflow:auto;padding:22px;min-height:0; }
 
-  /* Dot indicators */
-  .dot {
-    width: 6px; height: 6px; border-radius: 50%;
-    flex-shrink: 0;
-  }
-  .dot-green { background: var(--green); box-shadow: 0 0 6px var(--green); }
-  .dot-amber { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
-  .dot-red { background: var(--red); box-shadow: 0 0 6px var(--red); }
-  .dot-cyan { background: var(--cyan); box-shadow: 0 0 6px var(--cyan); }
-  .dot-dim { background: var(--text-3); }
+::-webkit-scrollbar { width:10px;height:10px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:rgba(255,255,255,.08);border-radius:10px; }
+::-webkit-scrollbar-thumb:hover { background:rgba(255,255,255,.16); }
 
-  /* Scrollbar */
-  ::-webkit-scrollbar { width: 4px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--border-glow); border-radius: 2px; }
+.chip { display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);font-family:var(--font-mono);font-size:10px;letter-spacing:.1em;color:var(--ink-dim);text-transform:uppercase; }
+.chip.live { color:var(--hue-d);border-color:rgba(142,255,193,.3); }
+.chip.warn { color:var(--hue-e);border-color:rgba(255,213,138,.3); }
 
-  /* Pulse animation */
-  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
-  @keyframes blink { 0%,49% { opacity: 1; } 50%,100% { opacity: 0; } }
-  @keyframes shimmer {
-    0% { background-position: -200% center; }
-    100% { background-position: 200% center; }
-  }
-  @keyframes slideIn {
-    from { opacity: 0; transform: translateY(8px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-  @keyframes spin { to { transform: rotate(360deg); } }
+/* Drop overlay */
+#drop-overlay { display:none;position:fixed;inset:0;z-index:100;background:rgba(5,5,22,.85);backdrop-filter:blur(12px);align-items:center;justify-content:center;flex-direction:column;gap:20px;border:2px dashed var(--hue-a);animation:fade-in .2s ease; }
+#drop-overlay.active { display:flex; }
+#drop-overlay .drop-icon { font-size:64px; }
+#drop-overlay .drop-text { font-family:var(--font-display);font-size:24px;color:var(--hue-a);letter-spacing:.1em; }
+#drop-overlay .drop-sub { font-family:var(--font-mono);font-size:12px;color:var(--ink-faint);letter-spacing:.15em; }
 
-  .pulse { animation: pulse 2s ease-in-out infinite; }
-  .blink { animation: blink 1s step-end infinite; }
-
-  /* Tweaks panel */
-  #tweaks-panel {
-    position: fixed;
-    bottom: 20px; right: 20px;
-    width: 260px;
-    background: var(--bg-2);
-    border: 1px solid var(--border-glow);
-    border-radius: 8px;
-    box-shadow: 0 0 30px rgba(0,200,255,0.1);
-    z-index: 10000;
-    display: none;
-    font-family: var(--mono);
-    font-size: 11px;
-  }
-  #tweaks-panel.visible { display: block; animation: slideIn 0.2s ease; }
-  #tweaks-panel .tweak-head {
-    padding: 10px 14px;
-    border-bottom: 1px solid var(--border);
-    color: var(--cyan);
-    font-size: 9px;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-  }
-  #tweaks-panel .tweak-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 12px; }
-  #tweaks-panel label { display: flex; flex-direction: column; gap: 4px; color: var(--text-2); font-size: 10px; }
-  #tweaks-panel select, #tweaks-panel input[type=range] {
-    background: var(--bg-3); border: 1px solid var(--border);
-    color: var(--text-1); padding: 4px 8px;
-    border-radius: 4px; font-family: var(--mono); font-size: 10px;
-    cursor: pointer; outline: none;
-  }
-  #tweaks-panel input[type=checkbox] { cursor: pointer; accent-color: var(--cyan); }
-
-  /* Bar chart */
-  .bar-container {
-    display: flex; flex-direction: column; gap: 6px;
-  }
-  .bar-row {
-    display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 10px;
-  }
-  .bar-label { width: 70px; color: var(--text-2); flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .bar-track { flex: 1; height: 6px; background: var(--bg-3); border-radius: 3px; overflow: hidden; }
-  .bar-fill { height: 100%; border-radius: 3px; transition: width 0.6s cubic-bezier(0.4,0,0.2,1); }
-  .bar-val { width: 40px; text-align: right; color: var(--text-2); flex-shrink: 0; }
-
-  /* Drop overlay */
-  #drop-overlay {
-    display: none;
-    position: fixed; inset: 0; z-index: 20000;
-    background: oklch(0.065 0.018 240 / 0.88);
-    backdrop-filter: blur(4px);
-    align-items: center; justify-content: center;
-    flex-direction: column; gap: 16px;
-    border: 2px dashed var(--cyan);
-    animation: fadeIn 0.15s ease;
-  }
-  #drop-overlay.active { display: flex; }
-  #drop-overlay .drop-icon {
-    font-size: 48px; line-height: 1;
-    filter: drop-shadow(0 0 16px var(--cyan));
-  }
-  #drop-overlay .drop-label {
-    font-family: var(--mono); font-size: 14px;
-    color: var(--cyan); letter-spacing: 0.2em;
-    text-transform: uppercase;
-    text-shadow: 0 0 20px var(--cyan);
-  }
-  #drop-overlay .drop-sub {
-    font-family: var(--mono); font-size: 10px;
-    color: var(--text-3); letter-spacing: 0.1em;
-  }
-
-  /* Upload toast */
-  #upload-toast {
-    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-    background: var(--bg-2); border: 1px solid var(--border-glow);
-    border-radius: 6px; padding: 10px 18px;
-    font-family: var(--mono); font-size: 11px; color: var(--text-1);
-    z-index: 19000; display: none; gap: 8px; align-items: center;
-    box-shadow: 0 0 24px var(--cyan-faint);
-    animation: slideIn 0.2s ease;
-  }
-  #upload-toast.visible { display: flex; }
+/* Upload toast */
+#upload-toast { position:fixed;bottom:110px;left:50%;transform:translateX(-50%);z-index:200;padding:12px 24px;border-radius:12px;background:var(--glass-bg-strong);border:1px solid var(--hue-d);color:var(--hue-d);font-family:var(--font-mono);font-size:12px;letter-spacing:.12em;display:none;animation:fade-in .2s ease; }
+#upload-toast.show { display:block; }
 </style>
 </head>
 <body>
+<div class="bg-stage">
+  <div class="stars"></div>
+  <div class="grid-floor"></div>
+</div>
 <div id="root"></div>
 
-<!-- Drag & Drop Overlay -->
+<!-- Drop overlay -->
 <div id="drop-overlay">
   <div class="drop-icon">🧠</div>
-  <div class="drop-label">Ins Gehirn ablegen</div>
-  <div class="drop-sub">Datei loslassen zum Speichern</div>
+  <div class="drop-text">DATEI INS GEHIRN LADEN</div>
+  <div class="drop-sub">LOSLASSEN ZUM HOCHLADEN</div>
 </div>
+<div id="upload-toast"></div>
 
-<!-- Upload Toast -->
-<div id="upload-toast">
-  <span id="upload-toast-icon">✓</span>
-  <span id="upload-toast-msg"></span>
-</div>
-
-<div id="tweaks-panel">
-  <div class="tweak-head">// TWEAKS</div>
-  <div class="tweak-body">
-    <label>
-      Accent Color
-      <select id="tw-accent" onchange="applyTweak()">
-        <option value="195">Cyan</option>
-        <option value="145">Green</option>
-        <option value="275">Purple</option>
-        <option value="60">Amber</option>
-      </select>
-    </label>
-    <label>
-      Layout Density
-      <select id="tw-density" onchange="applyTweak()">
-        <option value="normal">Normal</option>
-        <option value="compact">Compact</option>
-      </select>
-    </label>
-    <label style="flex-direction:row;align-items:center;gap:8px;">
-      <input type="checkbox" id="tw-glow" onchange="applyTweak()" checked>
-      Glow-Effekte
-    </label>
-    <label style="flex-direction:row;align-items:center;gap:8px;">
-      <input type="checkbox" id="tw-grid" onchange="applyTweak()" checked>
-      Grid-Hintergrund
-    </label>
-  </div>
-</div>
-
+<!-- Drag & drop logic (vanilla, runs before React) -->
 <script>
-  function applyTweak() {
-    const hue = document.getElementById('tw-accent').value;
-    const glow = document.getElementById('tw-glow').checked;
-    const grid = document.getElementById('tw-grid').checked;
-    const density = document.getElementById('tw-density').value;
-    const root = document.documentElement;
-    root.style.setProperty('--cyan', `oklch(0.75 0.14 ${hue})`);
-    root.style.setProperty('--cyan-dim', `oklch(0.55 0.10 ${hue})`);
-    root.style.setProperty('--cyan-faint', `oklch(0.75 0.14 ${hue} / 0.08)`);
-    root.style.setProperty('--border-glow', `oklch(0.28 0.06 ${hue})`);
-    document.body.style.backgroundImage = grid
-      ? `linear-gradient(rgba(0,200,255,0.015) 1px, transparent 1px),linear-gradient(90deg, rgba(0,200,255,0.015) 1px, transparent 1px)`
-      : 'none';
-    document.querySelectorAll('.panel-title').forEach(el => {
-      el.style.fontSize = density === 'compact' ? '8px' : '9px';
-    });
+(function(){
+  let _dc = 0;
+  const overlay = document.getElementById('drop-overlay');
+  const toast = document.getElementById('upload-toast');
+  function showToast(msg, dur) {
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), dur || 3000);
   }
-
-  window.addEventListener('message', e => {
-    if (e.data?.type === '__activate_edit_mode') {
-      document.getElementById('tweaks-panel').classList.add('visible');
-    } else if (e.data?.type === '__deactivate_edit_mode') {
-      document.getElementById('tweaks-panel').classList.remove('visible');
-    }
-  });
-  window.parent.postMessage({ type: '__edit_mode_available' }, '*');
-
-  // ── Drag & Drop ────────────────────────────────────────────────────────────
-  let _dragCounter = 0;
-  const overlay   = document.getElementById('drop-overlay');
-  const toast     = document.getElementById('upload-toast');
-  const toastMsg  = document.getElementById('upload-toast-msg');
-  const toastIcon = document.getElementById('upload-toast-icon');
-  let _toastTimer = null;
-
-  function showToast(msg, ok = true) {
-    toastIcon.textContent = ok ? '✓' : '✕';
-    toastIcon.style.color = ok ? 'var(--green)' : 'var(--red)';
-    toastMsg.textContent  = msg;
-    toast.classList.add('visible');
-    clearTimeout(_toastTimer);
-    _toastTimer = setTimeout(() => toast.classList.remove('visible'), 3500);
-  }
-
-  document.addEventListener('dragenter', e => {
-    if (!e.dataTransfer.types.includes('Files')) return;
-    _dragCounter++;
-    overlay.classList.add('active');
-  });
-
-  document.addEventListener('dragleave', e => {
-    _dragCounter--;
-    if (_dragCounter <= 0) { _dragCounter = 0; overlay.classList.remove('active'); }
-  });
-
+  document.addEventListener('dragenter', e => { e.preventDefault(); _dc++; overlay.classList.add('active'); });
+  document.addEventListener('dragleave', e => { e.preventDefault(); _dc--; if(_dc<=0){_dc=0;overlay.classList.remove('active');} });
   document.addEventListener('dragover', e => e.preventDefault());
-
   document.addEventListener('drop', async e => {
-    e.preventDefault();
-    _dragCounter = 0;
-    overlay.classList.remove('active');
-    const files = Array.from(e.dataTransfer.files);
+    e.preventDefault(); _dc=0; overlay.classList.remove('active');
+    const files = [...e.dataTransfer.files];
     if (!files.length) return;
-
-    for (const file of files) {
-      const fd = new FormData();
-      fd.append('file', file);
+    for (const f of files) {
+      const fd = new FormData(); fd.append('file', f);
       try {
-        const res  = await fetch('/api/brain/upload', { method: 'POST', body: fd });
-        const data = await res.json();
-        if (data.ok) {
-          showToast(`🧠 "${data.name}" gespeichert (${data.size})`);
-          window.__brainRefresh && window.__brainRefresh();
-        } else {
-          showToast(`Fehler: ${data.error || 'Unbekannt'}`, false);
-        }
-      } catch (err) {
-        showToast(`Upload fehlgeschlagen: ${err.message}`, false);
-      }
+        const r = await fetch('/api/brain/upload', {method:'POST', body:fd});
+        const j = await r.json();
+        showToast('✓ ' + (j.filename || f.name) + ' gespeichert');
+      } catch(err) { showToast('✗ Upload fehlgeschlagen', 4000); }
     }
+    if (window.__brainRefresh) window.__brainRefresh();
   });
+})();
 </script>
 
-<script type="text/babel">
-const { useState, useEffect, useRef, useCallback } = React;
-
-// ─── STATIC DATA (unchanged from original) ───────────────────────────────────
-
-const MCP_SERVERS = [
-  { id: 1, name: 'filesystem', desc: 'Local FS Access', status: 'connected', latency: 2, tools: 8 },
-  { id: 2, name: 'github', desc: 'GitHub API v4', status: 'connected', latency: 142, tools: 12 },
-  { id: 3, name: 'brave-search', desc: 'Web Search', status: 'connected', latency: 88, tools: 3 },
-  { id: 4, name: 'memory', desc: 'KV Store', status: 'connected', latency: 1, tools: 5 },
-  { id: 5, name: 'postgres', desc: 'DB Connector', status: 'idle', latency: 34, tools: 6 },
-  { id: 6, name: 'slack', desc: 'Slack Workspace', status: 'error', latency: null, tools: 7 },
-];
-
-const TOKEN_HISTORY = [
-  { day: 'Mo', input: 42000, output: 18000, cached: 12000 },
-  { day: 'Di', input: 68000, output: 31000, cached: 24000 },
-  { day: 'Mi', input: 55000, output: 22000, cached: 18000 },
-  { day: 'Do', input: 91000, output: 44000, cached: 31000 },
-  { day: 'Fr', input: 78000, output: 35000, cached: 28000 },
-  { day: 'Sa', input: 23000, output: 9000, cached: 7000 },
-  { day: 'So', input: 14000, output: 5000, cached: 3000 },
-];
-
-const MONTHLY_LIMIT = 10000000;
-const MONTHLY_USED  = 3_420_000;
-
-const JARVIS_RESPONSES = [
-  "Analysiere die Anfrage... Ich habe relevante Kontext aus dem Memory-Server abgerufen. Hier ist meine Auswertung:",
-  "Verstanden. Führe parallele Tool-Calls aus: filesystem.read + memory.query. Ergebnis liegt vor.",
-  "Interessante Frage. Ich durchsuche mit brave-search nach aktuellen Daten und kombiniere das mit meinem Wissen.",
-  "Aufgabe erkannt. Ich zerlege das in 3 Teilschritte und arbeite sie sequenziell ab.",
-  "GitHub-Repository wird analysiert... 14 Commits seit gestern, 2 offene PRs. Soll ich einen Summary erstellen?",
-];
-
-const INIT_MESSAGES = [
-  { id: 1, role: 'system', content: 'System initialisiert. 4 MCP-Server verbunden. Bereit.', ts: '09:41' },
-  { id: 2, role: 'assistant', content: 'Guten Morgen. Alle Systeme online. Ich habe 3 neue GitHub-Benachrichtigungen und 2 offene Aufgaben aus dem Speicher geladen. Womit kann ich beginnen?', ts: '09:41' },
-  { id: 3, role: 'user', content: 'Zeig mir den Status der letzten Deployments.', ts: '09:43' },
-  { id: 4, role: 'assistant', content: 'Rufe GitHub Actions ab...\n\n✓ prod/frontend — deployed 14:32 — OK\n✓ prod/api — deployed 13:18 — OK\n⚠ staging/ml-service — deployed 11:05 — Health-Check schlägt fehl\n\nDer ML-Service zeigt erhöhte Memory-Nutzung (87%). Soll ich die Logs analysieren?', ts: '09:43', tools: ['github.list_workflows', 'github.get_run'] },
-];
-
-// ─── REAL-DATA HOOKS ──────────────────────────────────────────────────────────
-
-function fmtMsgTime(iso) {
-  const d = new Date(iso);
-  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-}
-
-function useJarvisWS() {
-  const [jarvisState, setJarvisState] = useState({
-    status: 'offline', mode: 'text', current_task: null,
-    uptime: 0, activity_log: [],
-    stats: { total_messages: 0, total_tool_calls: 0 },
-  });
-  const [connected, setConnected] = useState(false);
-  const wsRef    = useRef(null);
-  const retryRef = useRef(null);
-
-  const connect = useCallback(() => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) return;
-    const ws = new WebSocket(`ws://${location.host}/ws`);
-    wsRef.current = ws;
-    ws.onopen  = () => { setConnected(true); clearTimeout(retryRef.current); };
-    ws.onmessage = ({ data }) => {
-      try {
-        const msg = JSON.parse(data);
-        if (msg.type === 'state_update') setJarvisState(msg.data);
-      } catch {}
-    };
-    ws.onclose = () => {
-      setConnected(false);
-      setJarvisState(s => ({ ...s, status: 'offline' }));
-      retryRef.current = setTimeout(connect, 3500);
-    };
-    ws.onerror = () => ws.close();
+<!-- tweaks-panel -->
+<script type="text/babel" data-presets="react">
+const __TWEAKS_STYLE = `
+  .twk-panel{position:fixed;right:16px;bottom:16px;z-index:2147483646;width:280px;max-height:calc(100vh - 32px);display:flex;flex-direction:column;transform:scale(var(--dc-inv-zoom,1));transform-origin:bottom right;background:rgba(250,249,247,.78);color:#29261b;-webkit-backdrop-filter:blur(24px) saturate(160%);backdrop-filter:blur(24px) saturate(160%);border:.5px solid rgba(255,255,255,.6);border-radius:14px;box-shadow:0 1px 0 rgba(255,255,255,.5) inset,0 12px 40px rgba(0,0,0,.18);font:11.5px/1.4 ui-sans-serif,system-ui,-apple-system,sans-serif;overflow:hidden}
+  .twk-hd{display:flex;align-items:center;justify-content:space-between;padding:10px 8px 10px 14px;cursor:move;user-select:none}
+  .twk-hd b{font-size:12px;font-weight:600;letter-spacing:.01em}
+  .twk-x{appearance:none;border:0;background:transparent;color:rgba(41,38,27,.55);width:22px;height:22px;border-radius:6px;cursor:default;font-size:13px;line-height:1}
+  .twk-x:hover{background:rgba(0,0,0,.06);color:#29261b}
+  .twk-body{padding:2px 14px 14px;display:flex;flex-direction:column;gap:10px;overflow-y:auto;overflow-x:hidden;min-height:0;scrollbar-width:thin}
+  .twk-row{display:flex;flex-direction:column;gap:5px}
+  .twk-row-h{flex-direction:row;align-items:center;justify-content:space-between;gap:10px}
+  .twk-lbl{display:flex;justify-content:space-between;align-items:baseline;color:rgba(41,38,27,.72)}
+  .twk-lbl>span:first-child{font-weight:500}
+  .twk-sect{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:rgba(41,38,27,.45);padding:10px 0 0}
+  .twk-toggle{position:relative;width:32px;height:18px;border:0;border-radius:999px;background:rgba(0,0,0,.15);transition:background .15s;cursor:default;padding:0}
+  .twk-toggle[data-on="1"]{background:#34c759}
+  .twk-toggle i{position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .15s}
+  .twk-toggle[data-on="1"] i{transform:translateX(14px)}
+`;
+function useTweaks(defaults) {
+  const [values, setValues] = React.useState(defaults);
+  const setTweak = React.useCallback((keyOrEdits, val) => {
+    const edits = typeof keyOrEdits === 'object' && keyOrEdits !== null ? keyOrEdits : { [keyOrEdits]: val };
+    setValues(prev => ({ ...prev, ...edits }));
   }, []);
-
-  useEffect(() => {
-    connect();
-    return () => { clearTimeout(retryRef.current); wsRef.current?.close(); };
-  }, [connect]);
-
-  return { jarvisState, connected };
+  return [values, setTweak];
 }
-
-function useCalendar() {
-  const [calEvents, setCalEvents] = useState([]);
-  const [calLoading, setCalLoading] = useState(true);
-  const [calError, setCalError]     = useState(null);
-
-  const load = useCallback(async () => {
-    setCalLoading(true); setCalError(null);
-    try {
-      const res  = await fetch('/api/calendar');
-      const data = await res.json();
-      if (data.success) setCalEvents(data.events);
-      else              setCalError(data.error);
-    } catch { setCalError('Netzwerkfehler'); }
-    finally { setCalLoading(false); }
+function TweaksPanel({ title='Tweaks', children }) {
+  const [open, setOpen] = React.useState(false);
+  const dragRef = React.useRef(null);
+  const offsetRef = React.useRef({ x:16, y:16 });
+  React.useEffect(() => {
+    const onMsg = e => {
+      if (e?.data?.type === '__activate_edit_mode') setOpen(true);
+      else if (e?.data?.type === '__deactivate_edit_mode') setOpen(false);
+    };
+    window.addEventListener('message', onMsg);
+    return () => window.removeEventListener('message', onMsg);
   }, []);
-
-  useEffect(() => {
-    load();
-    const id = setInterval(load, 60_000);
-    return () => clearInterval(id);
-  }, [load]);
-
-  return { calEvents, calLoading, calError };
-}
-
-// Convert WebSocket activity_log → chat message format
-function activityToMessages(log) {
-  return [...log].reverse().map(item => ({
-    id:    item.id,
-    role:  item.type === 'user'      ? 'user'
-         : item.type === 'assistant' ? 'assistant'
-         : item.type === 'tool'      ? 'tool'
-         : 'system',
-    content: item.content,
-    tool:  item.tool,
-    ts:    fmtMsgTime(item.timestamp),
-  }));
-}
-
-// ─── COMPONENTS (original, unchanged) ────────────────────────────────────────
-
-function Header({ time, cpuLoad, memLoad, jarvisStatus, wsConnected }) {
-  // Map real JARVIS status → dot colour & label
-  const statusDot   = jarvisStatus === 'idle'       ? 'green'
-                    : jarvisStatus === 'processing'  ? 'amber'
-                    : 'red';
-  const statusLabel = jarvisStatus === 'idle'       ? 'ONLINE'
-                    : jarvisStatus === 'processing'  ? 'WORKING'
-                    : 'OFFLINE';
-
+  if (!open) return null;
   return (
-    <header style={{
-      display: 'flex', alignItems: 'center', gap: '24px',
-      padding: '0 16px', height: '44px', flexShrink: 0,
-      background: 'var(--bg-2)',
-      borderBottom: '1px solid var(--border)',
-      position: 'relative',
-    }}>
-      {/* Logo */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: '160px' }}>
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-          <polygon points="10,1 18,6 18,14 10,19 2,14 2,6" stroke="var(--cyan)" strokeWidth="1.2" fill="none"/>
-          <polygon points="10,5 14,7.5 14,12.5 10,15 6,12.5 6,7.5" fill="var(--cyan)" opacity="0.15"/>
-          <circle cx="10" cy="10" r="2" fill="var(--cyan)"/>
-        </svg>
-        <span style={{ fontFamily: 'var(--mono)', fontWeight: 700, fontSize: '14px', letterSpacing: '0.15em', color: 'var(--cyan)' }} className="glow-cyan">
-          JARVIS
-        </span>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: '9px', color: 'var(--text-3)', letterSpacing: '0.1em' }}>v2.4.1</span>
+    <>
+      <style>{__TWEAKS_STYLE}</style>
+      <div ref={dragRef} className="twk-panel" style={{ right: offsetRef.current.x, bottom: offsetRef.current.y }}>
+        <div className="twk-hd"><b>{title}</b><button className="twk-x" onClick={() => setOpen(false)}>✕</button></div>
+        <div className="twk-body">{children}</div>
       </div>
-
-      {/* Divider */}
-      <div style={{ width: '1px', height: '20px', background: 'var(--border)' }}/>
-
-      {/* Status chips — first chip is now live */}
-      <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-        <StatusChip dot={statusDot} label={statusLabel} pulse={jarvisStatus === 'idle'} />
-        <StatusChip dot={wsConnected ? 'cyan' : 'dim'} label={wsConnected ? `${MCP_SERVERS.filter(s=>s.status==='connected').length} MCP` : 'WS OFFLINE'} />
-        <StatusChip dot="amber" label="GPT-4o" />
-      </div>
-
-      {/* Spacer */}
-      <div style={{ flex: 1 }}/>
-
-      {/* Metrics */}
-      <div style={{ display: 'flex', gap: '20px', alignItems: 'center', fontFamily: 'var(--mono)', fontSize: '10px', color: 'var(--text-2)' }}>
-        <MiniMetric label="CPU" val={cpuLoad} unit="%" color={cpuLoad > 80 ? 'var(--amber)' : 'var(--cyan)'} />
-        <MiniMetric label="MEM" val={memLoad} unit="%" color={memLoad > 80 ? 'var(--amber)' : 'var(--cyan)'} />
-        <div style={{ color: 'var(--text-3)' }}>|</div>
-        <span style={{ color: 'var(--text-1)' }}>{time}</span>
-        <span style={{ color: 'var(--text-3)', fontSize: '9px' }}>
-          {new Date().toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' })}
-        </span>
-      </div>
-    </header>
+    </>
   );
 }
-
-function StatusChip({ dot, label, pulse }) {
-  const colors = { green: 'var(--green)', cyan: 'var(--cyan)', amber: 'var(--amber)', red: 'var(--red)', dim: 'var(--text-3)' };
-  const c = colors[dot] || 'var(--text-3)';
+function TweakSection({ label, children }) {
+  return <><div className="twk-sect">{label}</div>{children}</>;
+}
+function TweakToggle({ label, value, onChange }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontFamily: 'var(--mono)', fontSize: '9px', letterSpacing: '0.1em', color: c }}>
-      <div className={pulse ? 'pulse' : ''} style={{ width: 5, height: 5, borderRadius: '50%', background: c, boxShadow: dot !== 'dim' ? `0 0 5px ${c}` : 'none' }}/>
-      {label}
+    <div className="twk-row twk-row-h">
+      <div className="twk-lbl"><span>{label}</span></div>
+      <button type="button" className="twk-toggle" data-on={value?'1':'0'} onClick={() => onChange(!value)}><i/></button>
     </div>
   );
 }
+Object.assign(window, { useTweaks, TweaksPanel, TweakSection, TweakToggle });
+</script>
 
-function MiniMetric({ label, val, unit, color }) {
+<!-- icons -->
+<script type="text/babel" data-presets="react">
+const Icon = ({ d, size=18, fill="none", stroke="currentColor", sw=1.6, children, viewBox="0 0 24 24" }) => (
+  <svg width={size} height={size} viewBox={viewBox} fill={fill} stroke={stroke} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">
+    {d ? <path d={d}/> : children}
+  </svg>
+);
+const Icons = {
+  Sunrise: p => <Icon {...p}><path d="M12 2v6"/><path d="m4.93 10.93 1.41 1.41"/><path d="M2 18h2"/><path d="M20 18h2"/><path d="m19.07 10.93-1.41 1.41"/><path d="M22 22H2"/><path d="M16 18a4 4 0 0 0-8 0"/></Icon>,
+  Gantt: p => <Icon {...p}><rect x="3" y="4" width="9" height="3" rx="1"/><rect x="7" y="10" width="11" height="3" rx="1"/><rect x="5" y="16" width="8" height="3" rx="1"/></Icon>,
+  Edit: p => <Icon {...p}><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></Icon>,
+  Cube: p => <Icon {...p}><path d="m21 16-9 5-9-5V8l9-5 9 5Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></Icon>,
+  Folder: p => <Icon {...p}><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></Icon>,
+  Github: p => <Icon {...p}><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></Icon>,
+  Brain: p => <Icon {...p}><path d="M9.5 2a2.5 2.5 0 0 1 2.5 2.5V20a2.5 2.5 0 0 1-4.96.44A2.5 2.5 0 0 1 4.5 18a2.5 2.5 0 0 1-1.98-3 2.5 2.5 0 0 1 0-3 2.5 2.5 0 0 1 1.5-4 2.5 2.5 0 0 1 5 .04Z"/><path d="M14.5 2a2.5 2.5 0 0 0-2.5 2.5V20a2.5 2.5 0 0 0 4.96.44A2.5 2.5 0 0 0 19.5 18a2.5 2.5 0 0 0 1.98-3 2.5 2.5 0 0 0 0-3 2.5 2.5 0 0 0-1.5-4 2.5 2.5 0 0 0-5 .04Z"/></Icon>,
+  Globe: p => <Icon {...p}><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15 15 0 0 1 4 10 15 15 0 0 1-4 10 15 15 0 0 1-4-10 15 15 0 0 1 4-10"/></Icon>,
+  Mic: p => <Icon {...p}><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></Icon>,
+  Send: p => <Icon {...p}><path d="m22 2-11 11"/><path d="M22 2 15 22l-4-9-9-4Z"/></Icon>,
+  X: p => <Icon {...p}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></Icon>,
+  Plus: p => <Icon {...p}><path d="M5 12h14"/><path d="M12 5v14"/></Icon>,
+  Sparkle: p => <Icon {...p}><path d="M12 3v3"/><path d="M12 18v3"/><path d="M3 12h3"/><path d="M18 12h3"/><path d="m5.6 5.6 2.1 2.1"/><path d="m16.3 16.3 2.1 2.1"/><path d="m5.6 18.4 2.1-2.1"/><path d="m16.3 7.7 2.1-2.1"/></Icon>,
+  Calendar: p => <Icon {...p}><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></Icon>,
+  Mail: p => <Icon {...p}><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></Icon>,
+  Chart: p => <Icon {...p}><path d="M3 3v18h18"/><path d="m7 14 4-4 4 4 5-5"/></Icon>,
+  Power: p => <Icon {...p}><path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.77.04"/></Icon>,
+  Server: p => <Icon {...p}><rect x="2" y="3" width="20" height="8" rx="2"/><rect x="2" y="13" width="20" height="8" rx="2"/><path d="M6 7h.01"/><path d="M6 17h.01"/></Icon>,
+  Branch: p => <Icon {...p}><circle cx="6" cy="3" r="2"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="6" r="2"/><path d="M6 5v8a4 4 0 0 0 4 4h6"/></Icon>,
+  Play: p => <Icon {...p}><polygon points="6 3 20 12 6 21 6 3"/></Icon>,
+  Settings: p => <Icon {...p}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></Icon>,
+  ChevronRight: p => <Icon {...p}><path d="m9 18 6-6-6-6"/></Icon>,
+  Bold: p => <Icon {...p}><path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6Z"/><path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6Z"/></Icon>,
+  Italic: p => <Icon {...p}><line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/></Icon>,
+  List: p => <Icon {...p}><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></Icon>,
+  File: p => <Icon {...p}><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></Icon>,
+  Image: p => <Icon {...p}><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></Icon>,
+  Download: p => <Icon {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></Icon>,
+  Trash: p => <Icon {...p}><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></Icon>,
+};
+window.Icons = Icons;
+</script>
+
+<!-- orb -->
+<script type="text/babel" data-presets="react">
+function Orb({ intensity=0.25, state="idle" }) {
+  const mountRef = React.useRef(null);
+  const intensityRef = React.useRef(intensity);
+  React.useEffect(() => { intensityRef.current = intensity; }, [intensity]);
+  React.useEffect(() => {
+    if (!mountRef.current || !window.THREE) return;
+    const THREE = window.THREE;
+    const mount = mountRef.current;
+    const w = mount.clientWidth, h = mount.clientHeight;
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(40, w/h, 0.1, 100);
+    camera.position.set(0,0,4);
+    const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+    renderer.setSize(w,h);
+    renderer.setClearColor(0x000000,0);
+    mount.appendChild(renderer.domElement);
+    const noiseGLSL = `
+      vec3 mod289(vec3 x){return x-floor(x*(1.0/289.0))*289.0;}
+      vec4 mod289(vec4 x){return x-floor(x*(1.0/289.0))*289.0;}
+      vec4 permute(vec4 x){return mod289(((x*34.0)+1.0)*x);}
+      vec4 taylorInvSqrt(vec4 r){return 1.79284291400159-0.85373472095314*r;}
+      float snoise(vec3 v){
+        const vec2 C=vec2(1.0/6.0,1.0/3.0);const vec4 D=vec4(0.0,0.5,1.0,2.0);
+        vec3 i=floor(v+dot(v,C.yyy));vec3 x0=v-i+dot(i,C.xxx);
+        vec3 g=step(x0.yzx,x0.xyz);vec3 l=1.0-g;
+        vec3 i1=min(g.xyz,l.zxy);vec3 i2=max(g.xyz,l.zxy);
+        vec3 x1=x0-i1+C.xxx;vec3 x2=x0-i2+C.yyy;vec3 x3=x0-D.yyy;
+        i=mod289(i);
+        vec4 p=permute(permute(permute(i.z+vec4(0.0,i1.z,i2.z,1.0))+i.y+vec4(0.0,i1.y,i2.y,1.0))+i.x+vec4(0.0,i1.x,i2.x,1.0));
+        float n_=0.142857142857;vec3 ns=n_*D.wyz-D.xzx;
+        vec4 j=p-49.0*floor(p*ns.z*ns.z);vec4 x_=floor(j*ns.z);vec4 y_=floor(j-7.0*x_);
+        vec4 x=x_*ns.x+ns.yyyy;vec4 y=y_*ns.x+ns.yyyy;vec4 h=1.0-abs(x)-abs(y);
+        vec4 b0=vec4(x.xy,y.xy);vec4 b1=vec4(x.zw,y.zw);
+        vec4 s0=floor(b0)*2.0+1.0;vec4 s1=floor(b1)*2.0+1.0;vec4 sh=-step(h,vec4(0.0));
+        vec4 a0=b0.xzyw+s0.xzyw*sh.xxyy;vec4 a1=b1.xzyw+s1.xzyw*sh.zzww;
+        vec3 p0=vec3(a0.xy,h.x);vec3 p1=vec3(a0.zw,h.y);vec3 p2=vec3(a1.xy,h.z);vec3 p3=vec3(a1.zw,h.w);
+        vec4 norm=taylorInvSqrt(vec4(dot(p0,p0),dot(p1,p1),dot(p2,p2),dot(p3,p3)));
+        p0*=norm.x;p1*=norm.y;p2*=norm.z;p3*=norm.w;
+        vec4 m=max(0.6-vec4(dot(x0,x0),dot(x1,x1),dot(x2,x2),dot(x3,x3)),0.0);m=m*m;
+        return 42.0*dot(m*m,vec4(dot(p0,x0),dot(p1,x1),dot(p2,x2),dot(p3,x3)));
+      }
+    `;
+    const sphereGeom = new THREE.IcosahedronGeometry(1.0, 64);
+    const sphereMat = new THREE.ShaderMaterial({
+      transparent:true, side:THREE.DoubleSide,
+      uniforms:{ uTime:{value:0}, uIntensity:{value:intensityRef.current} },
+      vertexShader:`varying vec3 vNormal;varying vec3 vPos;varying float vDisp;uniform float uTime;uniform float uIntensity;${noiseGLSL}
+        void main(){vec3 p=position;float n=snoise(p*1.4+vec3(uTime*0.18));float n2=snoise(p*2.7+vec3(uTime*0.32,0.0,0.0));
+        float disp=n*0.18+n2*0.08;disp*=(0.6+uIntensity*1.6);p+=normal*disp;vDisp=disp;
+        vNormal=normalize(normalMatrix*normal);vec4 mv=modelViewMatrix*vec4(p,1.0);vPos=mv.xyz;gl_Position=projectionMatrix*mv;}`,
+      fragmentShader:`varying vec3 vNormal;varying vec3 vPos;varying float vDisp;uniform float uTime;uniform float uIntensity;
+        vec3 pal(float t){vec3 a=vec3(0.5,0.5,0.5);vec3 b=vec3(0.5,0.5,0.5);vec3 c=vec3(1.0,1.0,1.0);vec3 d=vec3(0.00,0.33,0.67);return a+b*cos(6.2831*(c*t+d));}
+        void main(){vec3 viewDir=normalize(-vPos);float fres=pow(1.0-max(dot(vNormal,viewDir),0.0),2.2);
+        float angle=atan(vNormal.y,vNormal.x);float t=angle*0.16+vDisp*1.5+uTime*0.08;
+        vec3 iridescent=pal(t);vec3 color=mix(iridescent*0.3,iridescent*1.4,fres);color+=vec3(0.05,0.1,0.2);
+        float alpha=mix(0.32,0.78,fres)*(0.7+uIntensity*0.4);gl_FragColor=vec4(color,alpha);}`,
+    });
+    const sphere = new THREE.Mesh(sphereGeom, sphereMat);
+    scene.add(sphere);
+    const coreGeom = new THREE.IcosahedronGeometry(0.55, 32);
+    const coreMat = new THREE.ShaderMaterial({
+      transparent:true,
+      uniforms:{ uTime:{value:0}, uIntensity:{value:intensityRef.current} },
+      vertexShader:`varying vec3 vNormal;varying vec3 vPos;uniform float uTime;uniform float uIntensity;${noiseGLSL}
+        void main(){vec3 p=position;float n=snoise(p*2.0+uTime*0.35);p+=normal*n*(0.06+uIntensity*0.25);
+        vNormal=normalize(normalMatrix*normal);vec4 mv=modelViewMatrix*vec4(p,1.0);vPos=mv.xyz;gl_Position=projectionMatrix*mv;}`,
+      fragmentShader:`varying vec3 vNormal;varying vec3 vPos;uniform float uTime;uniform float uIntensity;
+        void main(){vec3 viewDir=normalize(-vPos);float fres=pow(1.0-max(dot(vNormal,viewDir),0.0),1.6);
+        vec3 cyan=vec3(0.43,0.9,1.0);vec3 violet=vec3(0.71,0.53,1.0);
+        vec3 col=mix(cyan,violet,0.5+0.5*sin(uTime*0.7));col*=(0.6+uIntensity*1.6);
+        float alpha=fres*(0.5+uIntensity*0.5);gl_FragColor=vec4(col,alpha);}`,
+    });
+    const core = new THREE.Mesh(coreGeom, coreMat);
+    scene.add(core);
+    const haloGeom = new THREE.IcosahedronGeometry(1.18, 2);
+    const haloMat = new THREE.MeshBasicMaterial({ color:0x6fe6ff, wireframe:true, transparent:true, opacity:0.18 });
+    const halo = new THREE.Mesh(haloGeom, haloMat);
+    scene.add(halo);
+    const dustCount = 600;
+    const dustPos = new Float32Array(dustCount*3);
+    for (let i=0;i<dustCount;i++) {
+      const r=1.5+Math.random()*1.4, theta=Math.random()*Math.PI*2, phi=Math.acos(2*Math.random()-1);
+      dustPos[i*3]=r*Math.sin(phi)*Math.cos(theta); dustPos[i*3+1]=r*Math.sin(phi)*Math.sin(theta); dustPos[i*3+2]=r*Math.cos(phi);
+    }
+    const dustGeom = new THREE.BufferGeometry();
+    dustGeom.setAttribute('position', new THREE.BufferAttribute(dustPos,3));
+    const dustMat = new THREE.PointsMaterial({ color:0xb487ff, size:0.03, transparent:true, opacity:0.6, blending:THREE.AdditiveBlending, depthWrite:false });
+    const dust = new THREE.Points(dustGeom, dustMat);
+    scene.add(dust);
+    let raf;
+    const clock = new THREE.Clock();
+    const animate = () => {
+      const t = clock.getElapsedTime();
+      sphereMat.uniforms.uTime.value = t; coreMat.uniforms.uTime.value = t;
+      const target = intensityRef.current;
+      sphereMat.uniforms.uIntensity.value += (target - sphereMat.uniforms.uIntensity.value)*0.08;
+      coreMat.uniforms.uIntensity.value = sphereMat.uniforms.uIntensity.value;
+      sphere.rotation.y=t*0.18; sphere.rotation.x=Math.sin(t*0.15)*0.2;
+      core.rotation.y=-t*0.35; core.rotation.z=t*0.18;
+      halo.rotation.y=t*0.12; halo.rotation.x=-t*0.08;
+      dust.rotation.y=t*0.04; dust.rotation.x=t*0.02;
+      renderer.render(scene,camera); raf=requestAnimationFrame(animate);
+    };
+    animate();
+    const ro = new ResizeObserver(() => {
+      const W=mount.clientWidth, H=mount.clientHeight;
+      camera.aspect=W/H; camera.updateProjectionMatrix(); renderer.setSize(W,H);
+    });
+    ro.observe(mount);
+    return () => {
+      cancelAnimationFrame(raf); ro.disconnect(); renderer.dispose();
+      sphereGeom.dispose(); sphereMat.dispose(); coreGeom.dispose(); coreMat.dispose();
+      haloGeom.dispose(); haloMat.dispose(); dustGeom.dispose(); dustMat.dispose();
+      if (renderer.domElement.parentNode===mount) mount.removeChild(renderer.domElement);
+    };
+  }, []);
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-      <span style={{ color: 'var(--text-3)' }}>{label}</span>
-      <span style={{ color }}>{val}{unit}</span>
+    <div className="orb-wrap">
+      <div className="orb-rings"><div className="ring r1"/><div className="ring r2"/><div className="ring r3"/></div>
+      <div ref={mountRef} className="orb-canvas"/>
     </div>
   );
 }
+window.Orb = Orb;
+</script>
 
-// ─── LEFT PANEL ──────────────────────────────────────────────────────────────
-
-function LeftPanel({ activeServer, setActiveServer }) {
+<!-- viewer3d -->
+<script type="text/babel" data-presets="react">
+function Viewer3D() {
+  const mountRef = React.useRef(null);
+  const stateRef = React.useRef({});
+  const [model, setModel] = React.useState("torus");
+  const [wireframe, setWireframe] = React.useState(false);
+  const [autoRotate, setAutoRotate] = React.useState(true);
+  const [stats, setStats] = React.useState({ verts:0, tris:0, fps:0 });
+  React.useEffect(() => {
+    if (!mountRef.current || !window.THREE) return;
+    const THREE = window.THREE;
+    const mount = mountRef.current;
+    const w=mount.clientWidth, h=mount.clientHeight;
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x07071f, 0.06);
+    const camera = new THREE.PerspectiveCamera(45,w/h,0.1,200);
+    camera.position.set(3,2,5);
+    const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+    renderer.setSize(w,h); renderer.setClearColor(0x000000,0);
+    mount.appendChild(renderer.domElement);
+    scene.add(new THREE.AmbientLight(0x1a1a3a,1.2));
+    const key=new THREE.PointLight(0x6fe6ff,2.4,50); key.position.set(5,4,5); scene.add(key);
+    const fill=new THREE.PointLight(0xff8fd0,1.5,50); fill.position.set(-4,-2,3); scene.add(fill);
+    const rim=new THREE.PointLight(0xb487ff,1.2,50); rim.position.set(0,5,-5); scene.add(rim);
+    const grid=new THREE.GridHelper(20,40,0x6fe6ff,0x1a1a3a);
+    grid.position.y=-1.4; grid.material.transparent=true; grid.material.opacity=0.35; scene.add(grid);
+    const makeMat=(wf)=>new THREE.MeshPhysicalMaterial({color:0x9ad8ff,metalness:0.4,roughness:0.25,clearcoat:0.8,clearcoatRoughness:0.15,transmission:0.25,ior:1.4,thickness:0.6,iridescence:0.9,iridescenceIOR:1.6,wireframe:wf});
+    const makeModel=(kind)=>{
+      if(kind==="torus") return new THREE.Mesh(new THREE.TorusKnotGeometry(0.9,0.28,220,32),makeMat(stateRef.current.wireframe));
+      if(kind==="icosa") return new THREE.Mesh(new THREE.IcosahedronGeometry(1.1,1),makeMat(stateRef.current.wireframe));
+      if(kind==="sphere") return new THREE.Mesh(new THREE.SphereGeometry(1.1,64,64),makeMat(stateRef.current.wireframe));
+      const g=new THREE.Group(); const m=makeMat(stateRef.current.wireframe);
+      if(kind==="helmet"){
+        g.add(new THREE.Mesh(new THREE.DodecahedronGeometry(1.1,0),m));
+        const vm=new THREE.MeshPhysicalMaterial({color:0x0a0a2a,metalness:0.9,roughness:0.05,emissive:0x6fe6ff,emissiveIntensity:0.6,wireframe:stateRef.current.wireframe});
+        const v=new THREE.Mesh(new THREE.BoxGeometry(1.6,0.35,0.6),vm); v.position.set(0,0.15,0.85); g.add(v);
+      } else {
+        g.add(new THREE.Mesh(new THREE.CylinderGeometry(0.5,0.7,1.6,32),m));
+        for(let i=-0.6;i<=0.6;i+=0.4){const r=new THREE.Mesh(new THREE.TorusGeometry(0.62,0.06,16,64),m);r.rotation.x=Math.PI/2;r.position.y=i;g.add(r);}
+        const c=new THREE.Mesh(new THREE.ConeGeometry(0.7,0.5,32),m); c.position.y=1.05; g.add(c);
+      }
+      return g;
+    };
+    let current=null;
+    const loadModel=(kind)=>{
+      if(current) scene.remove(current);
+      current=makeModel(kind); scene.add(current);
+      let verts=0,tris=0;
+      current.traverse(o=>{if(o.geometry){verts+=o.geometry.attributes.position?.count||0;tris+=(o.geometry.index?o.geometry.index.count/3:(o.geometry.attributes.position?.count||0)/3);}});
+      setStats(s=>({...s,verts,tris:Math.floor(tris)}));
+      stateRef.current.current=current;
+    };
+    stateRef.current.wireframe=wireframe; loadModel(model); stateRef.current.loadModel=loadModel;
+    let drag=false,lx=0,ly=0,rotY=0.4,rotX=0.2,zoom=5;
+    const onDown=e=>{drag=true;lx=e.clientX;ly=e.clientY;};
+    const onMove=e=>{if(!drag)return;rotY+=(e.clientX-lx)*0.01;rotX+=(e.clientY-ly)*0.01;rotX=Math.max(-1.2,Math.min(1.2,rotX));lx=e.clientX;ly=e.clientY;};
+    const onUp=()=>{drag=false;};
+    const onWheel=e=>{e.preventDefault();zoom=Math.max(2.5,Math.min(12,zoom+e.deltaY*0.005));};
+    renderer.domElement.addEventListener('mousedown',onDown);
+    window.addEventListener('mousemove',onMove); window.addEventListener('mouseup',onUp);
+    renderer.domElement.addEventListener('wheel',onWheel,{passive:false});
+    let raf,fpsTime=performance.now(),frames=0;
+    const clock=new THREE.Clock();
+    const animate=()=>{
+      const dt=clock.getDelta();
+      if(stateRef.current.autoRotate) rotY+=dt*0.4;
+      const cx=Math.sin(rotY)*Math.cos(rotX)*zoom, cy=Math.sin(rotX)*zoom, cz=Math.cos(rotY)*Math.cos(rotX)*zoom;
+      camera.position.set(cx,cy,cz); camera.lookAt(0,0,0);
+      frames++; const now=performance.now();
+      if(now-fpsTime>500){setStats(s=>({...s,fps:Math.round(frames*1000/(now-fpsTime))}));frames=0;fpsTime=now;}
+      renderer.render(scene,camera); raf=requestAnimationFrame(animate);
+    };
+    animate();
+    const ro=new ResizeObserver(()=>{const W=mount.clientWidth,H=mount.clientHeight;camera.aspect=W/H;camera.updateProjectionMatrix();renderer.setSize(W,H);});
+    ro.observe(mount);
+    return ()=>{cancelAnimationFrame(raf);ro.disconnect();renderer.domElement.removeEventListener('mousedown',onDown);window.removeEventListener('mousemove',onMove);window.removeEventListener('mouseup',onUp);renderer.domElement.removeEventListener('wheel',onWheel);renderer.dispose();if(renderer.domElement.parentNode===mount)mount.removeChild(renderer.domElement);};
+  }, []);
+  React.useEffect(()=>{stateRef.current.autoRotate=autoRotate;},[autoRotate]);
+  React.useEffect(()=>{stateRef.current.wireframe=wireframe;if(stateRef.current.current){stateRef.current.current.traverse(o=>{if(o.material){if(Array.isArray(o.material))o.material.forEach(m=>m.wireframe=wireframe);else o.material.wireframe=wireframe;}});};},[wireframe]);
+  React.useEffect(()=>{stateRef.current.loadModel?.(model);},[model]);
+  const models=[{id:"torus",name:"Torus Knot",meta:"procedural"},{id:"icosa",name:"Icosahedron",meta:"20-face"},{id:"sphere",name:"Sphere",meta:"smooth"},{id:"helmet",name:"Helmet",meta:"composite"},{id:"engine",name:"Engine",meta:"composite"}];
   return (
-    <div style={{ width: '220px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-      <MCPPanel activeServer={activeServer} setActiveServer={setActiveServer} />
-      <SystemPanel />
-    </div>
-  );
-}
-
-function MCPPanel({ activeServer, setActiveServer }) {
-  return (
-    <div className="panel" style={{ flex: '0 0 auto' }}>
-      <div className="panel-title">
-        <div className="dot dot-cyan pulse"/>
-        <span className="bracket">[</span>MCP SERVERS<span className="bracket">]</span>
-      </div>
-      <div style={{ padding: '6px 0' }}>
-        {MCP_SERVERS.map(srv => (
-          <ServerRow key={srv.id} srv={srv} active={activeServer===srv.id} onClick={()=>setActiveServer(activeServer===srv.id?null:srv.id)} />
+    <div style={{display:"grid",gridTemplateColumns:"200px 1fr 200px",gap:16,height:"100%"}}>
+      <div className="glass" style={{padding:14,overflow:"auto"}}>
+        <div style={{fontFamily:"var(--font-mono)",fontSize:10,letterSpacing:".18em",color:"var(--ink-faint)",textTransform:"uppercase",marginBottom:10}}>Models</div>
+        {models.map(m=>(
+          <div key={m.id} onClick={()=>setModel(m.id)} style={{padding:"10px 12px",marginBottom:6,borderRadius:10,background:model===m.id?"var(--glass-bg-strong)":"transparent",border:model===m.id?"1px solid var(--glass-border-strong)":"1px solid transparent",cursor:"pointer",transition:"all .2s ease"}}>
+            <div style={{fontFamily:"var(--font-display)",fontSize:13}}>{m.name}</div>
+            <div style={{fontFamily:"var(--font-mono)",fontSize:10,color:"var(--ink-faint)",letterSpacing:".1em",marginTop:2}}>{m.meta}</div>
+          </div>
         ))}
       </div>
-      <div style={{ padding: '6px 12px 8px', borderTop: '1px solid var(--border)', fontFamily: 'var(--mono)', fontSize: '9px', color: 'var(--text-3)', display: 'flex', justifyContent: 'space-between' }}>
-        <span>{MCP_SERVERS.reduce((a,s)=>a+s.tools,0)} tools total</span>
-        <span style={{ color: 'var(--cyan)' }}>{MCP_SERVERS.filter(s=>s.status==='connected').length}/{MCP_SERVERS.length}</span>
-      </div>
-    </div>
-  );
-}
-
-function ServerRow({ srv, active, onClick }) {
-  const statusColor = srv.status === 'connected' ? 'var(--green)' : srv.status === 'idle' ? 'var(--amber)' : 'var(--red)';
-  const statusLabel = srv.status === 'connected' ? 'OK' : srv.status === 'idle' ? 'IDLE' : 'ERR';
-  return (
-    <div onClick={onClick} style={{
-      padding: '5px 12px',
-      cursor: 'pointer',
-      background: active ? 'var(--cyan-faint)' : 'transparent',
-      borderLeft: active ? '2px solid var(--cyan)' : '2px solid transparent',
-      transition: 'all 0.15s',
-      display: 'flex', flexDirection: 'column', gap: '2px',
-    }}
-    onMouseEnter={e=>e.currentTarget.style.background='var(--bg-3)'}
-    onMouseLeave={e=>e.currentTarget.style.background=active?'var(--cyan-faint)':'transparent'}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: '11px', color: 'var(--text-1)' }}>{srv.name}</span>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: '8px', color: statusColor, letterSpacing: '0.08em' }}>{statusLabel}</span>
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: '9px', color: 'var(--text-3)' }}>{srv.desc}</span>
-        {srv.latency !== null && (
-          <span style={{ fontFamily: 'var(--mono)', fontSize: '9px', color: srv.latency > 100 ? 'var(--amber-dim)' : 'var(--text-3)' }}>{srv.latency}ms</span>
-        )}
-      </div>
-      {active && (
-        <div style={{ marginTop: '4px', padding: '4px 0', borderTop: '1px solid var(--border)', fontFamily: 'var(--mono)', fontSize: '9px', color: 'var(--cyan)', animation: 'fadeIn 0.2s ease' }}>
-          {srv.tools} tools verfügbar
+      <div className="glass" style={{position:"relative",overflow:"hidden"}}>
+        <div ref={mountRef} style={{width:"100%",height:"100%",cursor:"grab"}}/>
+        <div style={{position:"absolute",top:12,left:12,display:"flex",gap:8}}>
+          <span className="chip live">● render</span>
+          <span className="chip">{stats.fps} fps</span>
         </div>
-      )}
-    </div>
-  );
-}
-
-function SystemPanel() {
-  const [cpu, setCpu] = useState(34);
-  const [mem, setMem] = useState(62);
-  const [net, setNet] = useState(12);
-
-  useEffect(() => {
-    const id = setInterval(() => {
-      setCpu(v => Math.min(95, Math.max(5, v + (Math.random()-0.5)*8)));
-      setMem(v => Math.min(95, Math.max(40, v + (Math.random()-0.5)*4)));
-      setNet(v => Math.min(100, Math.max(0, v + (Math.random()-0.5)*15)));
-    }, 2000);
-    return () => clearInterval(id);
-  }, []);
-
-  return (
-    <div className="panel" style={{ flex: 1 }}>
-      <div className="panel-title">
-        <span className="bracket">[</span>SYSTEM<span className="bracket">]</span>
+        <div style={{position:"absolute",bottom:12,left:12,fontFamily:"var(--font-mono)",fontSize:10,color:"var(--ink-faint)",letterSpacing:".12em"}}>DRAG · SCROLL TO ZOOM</div>
       </div>
-      <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        <ResourceBar label="CPU" val={Math.round(cpu)} color={cpu>80?'var(--amber)':'var(--cyan)'} />
-        <ResourceBar label="MEM" val={Math.round(mem)} color={mem>80?'var(--amber)':'var(--cyan)'} />
-        <ResourceBar label="NET" val={Math.round(net)} color='var(--green)' />
-      </div>
-      <div style={{ padding: '0 12px 10px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-        <SysRow label="Model" val="gpt-4o" />
-        <SysRow label="Context" val="128k" />
-        <SysRow label="Temp" val="0.7" />
-        <SysRow label="Uptime" val="4h 23m" />
-      </div>
-    </div>
-  );
-}
-
-function ResourceBar({ label, val, color }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--mono)', fontSize: '9px' }}>
-        <span style={{ color: 'var(--text-2)' }}>{label}</span>
-        <span style={{ color }}>{val}%</span>
-      </div>
-      <div style={{ height: '4px', background: 'var(--bg-3)', borderRadius: '2px', overflow: 'hidden' }}>
-        <div style={{ width: `${val}%`, height: '100%', background: color, borderRadius: '2px', boxShadow: `0 0 6px ${color}`, transition: 'width 0.6s ease' }}/>
-      </div>
-    </div>
-  );
-}
-
-function SysRow({ label, val }) {
-  return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--mono)', fontSize: '10px' }}>
-      <span style={{ color: 'var(--text-3)' }}>{label}</span>
-      <span style={{ color: 'var(--text-1)' }}>{val}</span>
-    </div>
-  );
-}
-
-// ─── URL RENDERER ────────────────────────────────────────────────────────────
-
-function renderContent(content, openViewer) {
-  const urlRe = /https?:\/\/[^\s\])"'<>\\]+/g;
-  const parts = [];
-  let last = 0, m;
-  while ((m = urlRe.exec(content)) !== null) {
-    if (m.index > last) parts.push(content.slice(last, m.index));
-    parts.push({ url: m[0] });
-    last = m.index + m[0].length;
-  }
-  if (last < content.length) parts.push(content.slice(last));
-  if (parts.length === 1 && typeof parts[0] === 'string') return content;
-  return parts.map((p, i) => {
-    if (typeof p === 'string') return <span key={i}>{p}</span>;
-    return (
-      <span key={i} style={{ display: 'inline-flex', alignItems: 'baseline', gap: '3px', flexWrap: 'wrap' }}>
-        <span style={{ color: 'var(--cyan)', wordBreak: 'break-all' }}>{p.url}</span>
-        {openViewer && (
-          <button
-            onClick={() => openViewer(p.url)}
-            style={{
-              background: 'var(--cyan-faint)', border: '1px solid var(--cyan-dim)',
-              color: 'var(--cyan)', borderRadius: '2px', padding: '1px 5px',
-              fontFamily: 'var(--mono)', fontSize: '8px', cursor: 'pointer',
-              letterSpacing: '0.08em', flexShrink: 0, lineHeight: 1.4,
-            }}
-          >↗ ÖFFNEN</button>
-        )}
-      </span>
-    );
-  });
-}
-
-// ─── VIEWER ───────────────────────────────────────────────────────────────────
-
-function TextFileViewer({ path }) {
-  const [content, setContent] = useState(null);
-  const [err, setErr] = useState(null);
-  useEffect(() => {
-    setContent(null); setErr(null);
-    fetch(`/api/view/file?path=${encodeURIComponent(path)}`)
-      .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.text(); })
-      .then(setContent)
-      .catch(e => setErr(e.message));
-  }, [path]);
-  if (err) return (
-    <div style={{ padding: '24px', fontFamily: 'var(--mono)', fontSize: '12px', color: 'var(--red)', textAlign: 'center' }}>
-      Fehler: {err}
-    </div>
-  );
-  if (!content) return (
-    <div style={{ padding: '24px', fontFamily: 'var(--mono)', fontSize: '11px', color: 'var(--text-3)', textAlign: 'center', letterSpacing: '0.1em' }}>
-      Lade…
-    </div>
-  );
-  const lines = content.split('\n');
-  return (
-    <div style={{ height: '100%', overflowY: 'auto', overflowX: 'auto' }}>
-      <table style={{ borderCollapse: 'collapse', minWidth: '100%' }}>
-        <tbody>
-          {lines.map((line, i) => (
-            <tr key={i} style={{ ':hover': { background: 'var(--bg-3)' } }}>
-              <td style={{
-                padding: '1px 12px 1px 16px', fontFamily: 'var(--mono)', fontSize: '11px',
-                color: 'var(--text-3)', textAlign: 'right', userSelect: 'none',
-                borderRight: '1px solid var(--border)', minWidth: '44px', verticalAlign: 'top',
-                lineHeight: '1.7',
-              }}>{i + 1}</td>
-              <td style={{
-                padding: '1px 16px', fontFamily: 'var(--mono)', fontSize: '12px',
-                color: 'var(--text-1)', whiteSpace: 'pre', lineHeight: '1.7',
-              }}>{line}</td>
-            </tr>
+      <div className="glass" style={{padding:14,overflow:"auto"}}>
+        <div style={{fontFamily:"var(--font-mono)",fontSize:10,letterSpacing:".18em",color:"var(--ink-faint)",textTransform:"uppercase",marginBottom:10}}>Properties</div>
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          {[{l:"Auto Rotate",v:autoRotate,s:setAutoRotate},{l:"Wireframe",v:wireframe,s:setWireframe}].map(({l,v,s})=>(
+            <div key={l} onClick={()=>s(!v)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 10px",borderRadius:10,background:"rgba(255,255,255,.03)",border:"1px solid rgba(255,255,255,.08)",cursor:"pointer"}}>
+              <span style={{fontSize:13}}>{l}</span>
+              <span style={{width:32,height:18,borderRadius:999,background:v?"var(--iris)":"rgba(255,255,255,.1)",position:"relative",transition:"all .2s ease"}}>
+                <span style={{position:"absolute",top:2,left:v?16:2,width:14,height:14,borderRadius:50,background:"#fff",transition:"all .2s ease"}}/>
+              </span>
+            </div>
           ))}
-        </tbody>
-      </table>
+        </div>
+        <div style={{height:1,background:"var(--glass-border)",margin:"16px 0"}}/>
+        <div style={{fontFamily:"var(--font-mono)",fontSize:10,letterSpacing:".18em",color:"var(--ink-faint)",textTransform:"uppercase",marginBottom:10}}>Geometry</div>
+        {[["Vertices",stats.verts.toLocaleString()],["Triangles",stats.tris.toLocaleString()],["Material","Physical"],["Iridescence","0.9"]].map(([k,v])=>(
+          <div key={k} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",fontFamily:"var(--font-mono)",fontSize:11}}>
+            <span style={{color:"var(--ink-faint)",letterSpacing:".1em",textTransform:"uppercase"}}>{k}</span>
+            <span style={{color:"var(--ink)"}}>{v}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+window.Viewer3D = Viewer3D;
+</script>
+
+<!-- modules + brain -->
+<script type="text/babel" data-presets="react">
+const { useState: useS, useEffect: useE, useRef: useR } = React;
+
+function SectionHeader({ icon, title, sub }) {
+  return (
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,fontFamily:"var(--font-display)",fontSize:14,letterSpacing:".06em"}}>
+        <span style={{color:"var(--hue-a)"}}>{icon}</span>{title}
+      </div>
+      <div style={{fontFamily:"var(--font-mono)",fontSize:10,color:"var(--ink-faint)",letterSpacing:".15em",textTransform:"uppercase"}}>{sub}</div>
     </div>
   );
 }
 
-function ViewerPanel({ viewer, onClose }) {
-  const [loading, setLoading] = useState(true);
-  const iframeRef = useRef(null);
-  const { type, src, title } = viewer;
-
-  useEffect(() => { setLoading(true); }, [src]);
-
-  const typeLabel = type === 'url' ? 'WEB' : type === 'pdf' ? 'PDF' : 'TEXT';
-  const typeColor = type === 'url' ? 'var(--cyan)' : type === 'pdf' ? 'var(--red)' : 'var(--green)';
-
-  const iframeSrc = type === 'url'
-    ? `/api/proxy?url=${encodeURIComponent(src)}`
-    : `/api/view/file?path=${encodeURIComponent(src)}`;
-
+/* ---------- MORNING BRIEFING (real calendar + weather) ---------- */
+function MorningBriefing({ calEvents=[], calLoading=false }) {
+  const now = new Date();
+  const time = now.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});
+  const date = now.toLocaleDateString("de-DE",{weekday:"long",day:"numeric",month:"long"});
+  const [weather, setWeather] = useS(null);
+  useE(() => {
+    fetch("https://wttr.in/Munich?format=j1")
+      .then(r=>r.json())
+      .then(d=>{
+        const c=d.current_condition?.[0];
+        if(c) setWeather({temp:c.temp_C, desc:c.weatherDesc?.[0]?.value||""});
+      }).catch(()=>{});
+  }, []);
+  const todayEvents = calEvents.filter(e => {
+    const d = new Date(e.start?.dateTime || e.start?.date || e.start);
+    return d.toDateString() === now.toDateString();
+  });
+  const hueColors = ["var(--hue-a)","var(--hue-b)","var(--hue-d)","var(--hue-c)"];
   return (
-    <div className="panel" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: '280px', animation: 'slideIn 0.2s ease' }}>
-      {/* Toolbar */}
-      <div className="panel-title" style={{ justifyContent: 'space-between', gap: '8px' }}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden' }}>
-          <span className="bracket">[</span>
-          <span style={{ color: typeColor, letterSpacing: '0.15em' }}>{typeLabel}</span>
-          <span className="bracket">]</span>
-          <span style={{ color: 'var(--text-2)', fontSize: '9px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '220px' }}>{title}</span>
-        </span>
-        <div style={{ display: 'flex', gap: '6px', flexShrink: 0, alignItems: 'center' }}>
-          {loading && type !== 'text' && (
-            <div style={{ width: 8, height: 8, borderRadius: '50%', border: '1px solid var(--cyan)', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }}/>
-          )}
-          {type === 'url' && (
-            <a href={src} target="_blank" rel="noreferrer" style={{
-              fontFamily: 'var(--mono)', fontSize: '9px', color: 'var(--text-3)',
-              textDecoration: 'none', letterSpacing: '0.08em',
-              padding: '2px 6px', border: '1px solid var(--border)', borderRadius: '3px',
-            }} title="Im Browser öffnen">↗</a>
-          )}
-          <button onClick={onClose} style={{
-            background: 'transparent', border: '1px solid var(--border)',
-            color: 'var(--text-3)', borderRadius: '3px', padding: '2px 7px',
-            fontFamily: 'var(--mono)', fontSize: '10px', cursor: 'pointer',
-            lineHeight: 1,
-          }} title="Schließen">✕</button>
+    <div style={{display:"grid",gridTemplateColumns:"1.2fr 1fr",gridTemplateRows:"auto 1fr",gap:16,height:"100%"}}>
+      <div className="glass glass-strong" style={{gridColumn:"1 / -1",padding:"24px 28px",display:"grid",gridTemplateColumns:"1fr auto",alignItems:"center"}}>
+        <div>
+          <div style={{fontFamily:"var(--font-mono)",fontSize:11,letterSpacing:".22em",color:"var(--ink-faint)",textTransform:"uppercase"}}>{date}</div>
+          <div style={{fontFamily:"var(--font-display)",fontSize:36,fontWeight:300,marginTop:8,lineHeight:1.15}}>
+            Guten Morgen, <b style={{background:"var(--iris)",WebkitBackgroundClip:"text",backgroundClip:"text",color:"transparent",fontWeight:600}}>Sir</b>.
+          </div>
+          <div style={{fontSize:14,color:"var(--ink-dim)",marginTop:6,maxWidth:640}}>
+            {calLoading ? "Kalender wird geladen…" : `Sie haben heute ${todayEvents.length} Termine.`}
+          </div>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"auto auto",gap:18,alignItems:"center"}}>
+          <div style={{textAlign:"right"}}>
+            <div style={{fontFamily:"var(--font-display)",fontSize:56,fontWeight:300,lineHeight:1,letterSpacing:"-0.02em"}}>{time}</div>
+            <div style={{fontFamily:"var(--font-mono)",fontSize:10,color:"var(--ink-faint)",letterSpacing:".2em",marginTop:4}}>MÜNCHEN · CET</div>
+          </div>
+          <div style={{padding:"14px 18px",borderRadius:14,background:"rgba(111,230,255,.06)",border:"1px solid rgba(111,230,255,.18)",display:"grid",gridTemplateColumns:"auto auto",gap:14,alignItems:"center"}}>
+            <Icons.Sparkle size={36} stroke="var(--hue-a)" sw={1.2}/>
+            <div>
+              <div style={{fontFamily:"var(--font-display)",fontSize:24,fontWeight:300,lineHeight:1}}>{weather ? weather.temp+"°" : "—"}</div>
+              <div style={{fontSize:11,color:"var(--ink-faint)",marginTop:4}}>{weather ? weather.desc : "Lädt…"}</div>
+            </div>
+          </div>
         </div>
       </div>
-
-      {/* Content */}
-      <div style={{ flex: 1, overflow: 'hidden', background: type === 'text' ? 'var(--bg-0)' : '#fff', position: 'relative' }}>
-        {type === 'text'
-          ? <TextFileViewer path={src} />
-          : (
-            <>
-              {loading && (
-                <div style={{
-                  position: 'absolute', inset: 0, display: 'flex', alignItems: 'center',
-                  justifyContent: 'center', background: 'var(--bg-0)', zIndex: 1,
-                  fontFamily: 'var(--mono)', fontSize: '10px', color: 'var(--text-3)',
-                  letterSpacing: '0.1em', gap: '8px',
-                }}>
-                  <div style={{ width: 10, height: 10, borderRadius: '50%', border: '1px solid var(--cyan)', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }}/>
-                  Lade {typeLabel}…
+      <div className="glass" style={{padding:18,overflow:"auto"}}>
+        <SectionHeader icon={<Icons.Calendar size={14}/>} title="Termine" sub={`Heute · ${todayEvents.length}`}/>
+        <div style={{display:"flex",flexDirection:"column",gap:8,marginTop:14}}>
+          {todayEvents.length===0 && !calLoading && <div style={{color:"var(--ink-faint)",fontSize:13,padding:"20px 0",textAlign:"center"}}>Keine Termine heute</div>}
+          {todayEvents.map((e,i)=>{
+            const start = e.start?.dateTime ? new Date(e.start.dateTime).toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"}) : e.start?.date || "";
+            return (
+              <div key={i} style={{display:"grid",gridTemplateColumns:"auto 1fr",gap:14,padding:"12px 14px",borderRadius:12,background:"rgba(255,255,255,.03)",border:"1px solid rgba(255,255,255,.06)",position:"relative"}}>
+                <div style={{position:"absolute",left:0,top:8,bottom:8,width:3,borderRadius:2,background:hueColors[i%4]}}/>
+                <div style={{paddingLeft:8,fontFamily:"var(--font-mono)",fontSize:13,color:"var(--ink)"}}>{start}</div>
+                <div>
+                  <div style={{fontFamily:"var(--font-display)",fontSize:14}}>{e.summary||e.title||"Termin"}</div>
+                  <div style={{fontSize:11,color:"var(--ink-faint)",marginTop:2}}>{e.location||""}</div>
                 </div>
-              )}
-              <iframe
-                ref={iframeRef}
-                src={iframeSrc}
-                onLoad={() => setLoading(false)}
-                style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
-                title={title}
-              />
-            </>
-          )
-        }
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <div style={{display:"grid",gridTemplateRows:"1fr",gap:16,minHeight:0}}>
+        <div className="glass" style={{padding:18,overflow:"auto"}}>
+          <SectionHeader icon={<Icons.Globe size={14}/>} title="Briefing" sub="Heute"/>
+          <div style={{marginTop:12,color:"var(--ink-dim)",fontSize:13,lineHeight:1.6}}>
+            Klicken Sie auf <b style={{color:"var(--ink)"}}>„Briefing"</b> in der Eingabe um ein vollständiges Morning Briefing von JARVIS zu erhalten — mit Wetter, Nachrichten und Aufgaben.
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
-// ─── CHAT ────────────────────────────────────────────────────────────────────
-
-function ChatPanel({ liveMessages, openViewer, viewerOpen }) {
-  const [localMessages, setLocalMessages] = useState(INIT_MESSAGES);
-  const [input, setInput]   = useState('');
-  const [thinking, setThinking] = useState(false);
-  const [thinkText, setThinkText] = useState('');
-  const bottomRef = useRef(null);
-  const nextId    = useRef(5);
-
-  const messages = liveMessages !== null ? liveMessages : localMessages;
-
-  useEffect(() => {
-    if (bottomRef.current) {
-      bottomRef.current.parentElement.scrollTop = bottomRef.current.offsetTop;
-    }
-  }, [messages.length, thinking]);
-
-  const now = () => {
-    const d = new Date();
-    return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+/* ---------- CHAT (real backend) ---------- */
+function ChatVoice({ messages=[], onSend, thinking=false }) {
+  const [input, setInput] = useS("");
+  const scrollRef = useR(null);
+  useE(()=>{ if(scrollRef.current) scrollRef.current.scrollTop=scrollRef.current.scrollHeight; },[messages]);
+  const send = () => {
+    if(!input.trim()) return;
+    onSend(input); setInput("");
   };
-
-  const send = useCallback(async () => {
-    if (!input.trim() || thinking) return;
-    const text = input.trim();
-    setInput('');
-
-    // /view command — open viewer locally without sending to JARVIS
-    if (text.startsWith('/view ')) {
-      const target = text.slice(6).trim();
-      if (target && openViewer) openViewer(target);
-      return;
-    }
-
-    if (liveMessages !== null) {
-      setThinking(true);
-      setThinkText('Wird gesendet…');
-      try {
-        await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: text }),
-        });
-      } finally {
-        setThinking(false);
-      }
-    } else {
-      const userMsg = { id: nextId.current++, role: 'user', content: text, ts: now() };
-      setLocalMessages(m => [...m, userMsg]);
-      setThinking(true);
-      const steps = ['Analysiere...', 'Tool-Calls werden vorbereitet...', 'Antwort wird generiert...'];
-      let i = 0;
-      setThinkText(steps[0]);
-      const tick = setInterval(() => { i++; if (i < steps.length) setThinkText(steps[i]); }, 600);
-      setTimeout(() => {
-        clearInterval(tick);
-        setThinking(false);
-        const resp = JARVIS_RESPONSES[Math.floor(Math.random()*JARVIS_RESPONSES.length)];
-        setLocalMessages(m => [...m, { id: nextId.current++, role: 'assistant', content: resp, ts: now(), tools: Math.random()>0.5?['memory.query','filesystem.read']:undefined }]);
-      }, 1800);
-    }
-  }, [input, thinking, liveMessages, openViewer]);
-
-  const isLive = liveMessages !== null;
-
   return (
-    <div className="panel" style={{
-      display: 'flex', flexDirection: 'column', overflow: 'hidden',
-      flex: viewerOpen ? '0 0 320px' : 1,
-      transition: 'flex-basis 0.25s ease',
-    }}>
-      <div className="panel-title" style={{ justifyContent: 'space-between' }}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <span className="bracket">[</span>CHAT<span className="bracket">]</span>
-        </span>
-        <span style={{ color: isLive ? 'var(--green)' : 'var(--text-3)', fontSize: '9px' }}>
-          {isLive ? `● LIVE · ${messages.length} msgs` : `${messages.length} msgs`}
-        </span>
-      </div>
-
-      {/* Messages */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        {messages.length === 0 && (
-          <div style={{ textAlign: 'center', fontFamily: 'var(--mono)', fontSize: '10px', color: 'var(--text-3)', marginTop: '40px', letterSpacing: '0.1em' }}>
-            — Warte auf JARVIS-Aktivität —
+    <div style={{display:"grid",gridTemplateRows:"1fr auto",height:"100%",gap:14}}>
+      <div ref={scrollRef} className="glass" style={{padding:"20px 24px",overflow:"auto"}}>
+        {messages.length===0 && (
+          <div style={{textAlign:"center",padding:"60px 20px",color:"var(--ink-faint)"}}>
+            <div style={{fontFamily:"var(--font-display)",fontSize:18,marginBottom:6}}>Wie kann ich helfen, Sir?</div>
+            <div style={{fontSize:13}}>Probieren Sie: „Briefing", „Was ist auf meinem Kalender?", „Zeig mein Gehirn"</div>
           </div>
         )}
-        {messages.map(msg => <ChatMessage key={msg.id} msg={msg} openViewer={openViewer} />)}
-        {thinking && <ThinkingIndicator text={thinkText} />}
-        <div ref={bottomRef} />
-      </div>
-
-      {/* Input */}
-      <div style={{ padding: '10px 12px', borderTop: '1px solid var(--border)', display: 'flex', gap: '8px', alignItems: 'flex-end', background: 'var(--bg-2)' }}>
-        <div style={{ flex: 1, position: 'relative' }}>
-          <div style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', fontFamily: 'var(--mono)', fontSize: '11px', color: 'var(--cyan)', pointerEvents: 'none' }}>›</div>
-          <input
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && !e.shiftKey && send()}
-            placeholder="/view <url|pfad> oder Anfrage eingeben…"
-            style={{
-              width: '100%', background: 'var(--bg-3)',
-              border: '1px solid var(--border)',
-              borderColor: input ? 'var(--border-glow)' : 'var(--border)',
-              borderRadius: '4px', padding: '8px 10px 8px 24px',
-              fontFamily: 'var(--mono)', fontSize: '12px', color: 'var(--text-1)',
-              outline: 'none', transition: 'border-color 0.2s',
-              boxShadow: input ? '0 0 10px var(--cyan-faint)' : 'none',
-            }}
-          />
+        <div style={{display:"flex",flexDirection:"column",gap:14}}>
+          {messages.map((m,i)=>(
+            <div key={i} style={{display:"flex",flexDirection:"column",alignItems:m.role==="user"?"flex-end":"flex-start"}}>
+              <div style={{fontFamily:"var(--font-mono)",fontSize:10,color:"var(--ink-faint)",letterSpacing:".15em",textTransform:"uppercase",marginBottom:4}}>
+                {m.role==="user"?"SIE":m.role==="tool"?"TOOL":"JARVIS"}
+              </div>
+              <div style={{maxWidth:"72%",padding:"12px 16px",borderRadius:14,background:m.role==="user"?"rgba(111,230,255,.1)":m.role==="tool"?"rgba(255,213,138,.06)":"rgba(255,255,255,.04)",border:m.role==="user"?"1px solid rgba(111,230,255,.22)":m.role==="tool"?"1px solid rgba(255,213,138,.2)":"1px solid rgba(255,255,255,.08)",fontSize:14,lineHeight:1.6,whiteSpace:"pre-wrap",wordBreak:"break-word"}}>
+                {m.tool && <div style={{fontFamily:"var(--font-mono)",fontSize:10,color:"var(--hue-e)",marginBottom:6,letterSpacing:".1em"}}>⚙ {m.tool}</div>}
+                {m.text}
+              </div>
+              {m.ts && <div style={{fontFamily:"var(--font-mono)",fontSize:10,color:"var(--ink-faint)",marginTop:4,letterSpacing:".1em"}}>{m.ts}</div>}
+            </div>
+          ))}
+          {thinking && (
+            <div style={{display:"flex",flexDirection:"column",alignItems:"flex-start"}}>
+              <div style={{fontFamily:"var(--font-mono)",fontSize:10,color:"var(--ink-faint)",letterSpacing:".15em",textTransform:"uppercase",marginBottom:4}}>JARVIS</div>
+              <div style={{padding:"12px 16px",borderRadius:14,background:"rgba(255,255,255,.04)",border:"1px solid rgba(255,255,255,.08)",display:"flex",gap:6,alignItems:"center"}}>
+                {[0,1,2].map(i=><span key={i} style={{width:6,height:6,borderRadius:50,background:"var(--hue-a)",animation:`pulse-dot ${0.8+i*0.15}s ease-in-out infinite`,display:"inline-block"}}/>)}
+              </div>
+            </div>
+          )}
         </div>
-        <button onClick={send} disabled={!input.trim() || thinking} style={{
-          background: input.trim() && !thinking ? 'var(--cyan-faint)' : 'transparent',
-          border: '1px solid',
-          borderColor: input.trim() && !thinking ? 'var(--cyan)' : 'var(--border)',
-          color: input.trim() && !thinking ? 'var(--cyan)' : 'var(--text-3)',
-          padding: '8px 14px', borderRadius: '4px',
-          fontFamily: 'var(--mono)', fontSize: '10px', letterSpacing: '0.1em',
-          cursor: input.trim() && !thinking ? 'pointer' : 'default',
-          transition: 'all 0.2s', flexShrink: 0,
-        }}>
-          {thinking ? '...' : 'SEND'}
+      </div>
+      <div className="glass glass-strong" style={{display:"grid",gridTemplateColumns:"1fr auto",gap:8,padding:8,alignItems:"center"}}>
+        <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&send()} placeholder="Nachricht an JARVIS…"
+          style={{background:"transparent",border:"none",outline:"none",color:"var(--ink)",fontFamily:"var(--font-body)",fontSize:15,padding:"10px 14px"}}/>
+        <button onClick={send} style={{padding:"10px 16px",border:"none",cursor:"pointer",background:"var(--iris)",color:"#050516",borderRadius:10,fontFamily:"var(--font-display)",fontSize:12,letterSpacing:".12em",textTransform:"uppercase",display:"flex",alignItems:"center",gap:6}}>
+          <Icons.Send size={14} stroke="#050516"/> Senden
         </button>
       </div>
     </div>
   );
 }
 
-function ChatMessage({ msg, openViewer }) {
-  const isUser   = msg.role === 'user';
-  const isSystem = msg.role === 'system';
-  const isTool   = msg.role === 'tool';
-
-  if (isSystem) return (
-    <div style={{ textAlign: 'center', fontFamily: 'var(--mono)', fontSize: '9px', color: 'var(--text-3)', letterSpacing: '0.1em', animation: 'fadeIn 0.3s ease' }}>
-      — {msg.content} —
-    </div>
-  );
-
-  if (isTool) return (
-    <div style={{ display: 'flex', justifyContent: 'center', animation: 'fadeIn 0.2s ease' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '3px 10px', background: 'var(--amber-faint)', border: '1px solid var(--amber-dim)', borderRadius: '4px' }}>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: '8px', color: 'var(--amber)', letterSpacing: '0.1em' }}>TOOL</span>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: '9px', padding: '1px 5px', background: 'var(--amber-faint)', border: '1px solid var(--amber-dim)', borderRadius: '3px', color: 'var(--amber)' }}>{msg.tool}</span>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: '9px', color: 'var(--text-3)' }}>{msg.ts}</span>
-      </div>
-    </div>
-  );
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: isUser ? 'flex-end' : 'flex-start', animation: 'slideIn 0.25s ease' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexDirection: isUser ? 'row-reverse' : 'row' }}>
-        <div style={{
-          width: 22, height: 22, borderRadius: isUser ? '4px' : '50%',
-          background: isUser ? 'var(--bg-3)' : 'var(--cyan-faint)',
-          border: `1px solid ${isUser ? 'var(--border)' : 'var(--cyan-dim)'}`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontFamily: 'var(--mono)', fontSize: '9px',
-          color: isUser ? 'var(--text-2)' : 'var(--cyan)',
-        }}>
-          {isUser ? 'U' : 'J'}
-        </div>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: '9px', color: 'var(--text-3)' }}>{msg.ts}</span>
-        {!isUser && msg.tools && (
-          <div style={{ display: 'flex', gap: '4px' }}>
-            {msg.tools.map(t => (
-              <span key={t} style={{ fontFamily: 'var(--mono)', fontSize: '8px', padding: '1px 5px', background: 'var(--amber-faint)', border: '1px solid var(--amber-dim)', borderRadius: '3px', color: 'var(--amber)' }}>{t}</span>
-            ))}
-          </div>
-        )}
-      </div>
-      <div style={{
-        maxWidth: '85%', padding: '8px 12px',
-        background: isUser ? 'var(--bg-3)' : 'var(--bg-2)',
-        border: `1px solid ${isUser ? 'var(--border)' : 'var(--border-glow)'}`,
-        borderRadius: isUser ? '8px 2px 8px 8px' : '2px 8px 8px 8px',
-        fontFamily: 'var(--mono)', fontSize: '12px', lineHeight: '1.6',
-        color: 'var(--text-1)',
-        whiteSpace: 'pre-wrap',
-        boxShadow: isUser ? 'none' : '0 0 15px var(--cyan-faint)',
-      }}>
-        {renderContent(msg.content, openViewer)}
-      </div>
-    </div>
-  );
-}
-
-function ThinkingIndicator({ text }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', animation: 'fadeIn 0.2s ease' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-        <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--cyan-faint)', border: '1px solid var(--cyan-dim)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--mono)', fontSize: '9px', color: 'var(--cyan)' }}>J</div>
-      </div>
-      <div style={{ maxWidth: '60%', padding: '8px 12px', background: 'var(--bg-2)', border: '1px solid var(--border-glow)', borderRadius: '2px 8px 8px 8px', boxShadow: '0 0 15px var(--cyan-faint)' }}>
-        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-          <div style={{ display: 'flex', gap: '3px' }}>
-            {[0,1,2].map(i => (
-              <div key={i} style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--cyan)', animation: `pulse 1.2s ease-in-out ${i*0.2}s infinite` }}/>
-            ))}
-          </div>
-          <span style={{ fontFamily: 'var(--mono)', fontSize: '10px', color: 'var(--text-3)' }}>{text}</span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── BRAIN PANEL ─────────────────────────────────────────────────────────────
-
-function useBrainFiles() {
-  const [files, setFiles]     = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  const load = useCallback(async () => {
-    try {
-      const res  = await fetch('/api/brain/list');
-      const data = await res.json();
-      setFiles(data.files || []);
-    } catch {}
-    finally { setLoading(false); }
-  }, []);
-
-  useEffect(() => {
-    load();
-    // Globaler Refresh-Hook für Drag & Drop
-    window.__brainRefresh = load;
-    return () => { window.__brainRefresh = null; };
-  }, [load]);
-
-  return { files, loading, reload: load };
-}
-
-function BrainPanel() {
-  const { files, loading, reload } = useBrainFiles();
-  const [deleting, setDeleting]    = useState(null);
-
-  const fmtSize = bytes =>
-    bytes >= 1_048_576 ? `${(bytes/1_048_576).toFixed(1)} MB`
-    : bytes >= 1024    ? `${Math.round(bytes/1024)} KB`
-    : `${bytes} B`;
-
-  const fmtDate = iso => {
-    const d = new Date(iso);
-    return `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+/* ---------- BRAIN MODULE ---------- */
+function BrainModule() {
+  const [files, setFiles] = useS([]);
+  const [loading, setLoading] = useS(true);
+  const [deleting, setDeleting] = useS(null);
+  const load = () => {
+    setLoading(true);
+    fetch("/api/brain/list").then(r=>r.json()).then(d=>{ setFiles(d.files||[]); setLoading(false); }).catch(()=>setLoading(false));
   };
-
-  const ext = name => name.includes('.') ? name.split('.').pop().toLowerCase() : '?';
-  const extColor = e => ({
-    pdf:'var(--red)', md:'var(--cyan)', txt:'var(--text-2)',
-    py:'var(--green)', js:'var(--amber)', ts:'var(--amber)',
-    csv:'var(--green)', json:'var(--amber)',
-  }[e] || 'var(--text-3)');
-
-  const deleteFile = async (name) => {
+  useE(()=>{ load(); window.__brainRefresh = load; return ()=>{ delete window.__brainRefresh; }; },[]);
+  const extColor = { pdf:"var(--hue-c)", txt:"var(--hue-a)", md:"var(--hue-a)", py:"var(--hue-e)", js:"var(--hue-e)", json:"var(--hue-e)", png:"var(--hue-b)", jpg:"var(--hue-b)", jpeg:"var(--hue-b)", csv:"var(--hue-d)", docx:"var(--hue-b)" };
+  const getExt = n => (n.split(".").pop()||"").toLowerCase();
+  const fmtSize = b => b>1048576 ? (b/1048576).toFixed(1)+" MB" : b>1024 ? (b/1024).toFixed(0)+" KB" : b+" B";
+  const del = async (name) => {
     setDeleting(name);
-    try {
-      await fetch(`/api/brain/file?name=${encodeURIComponent(name)}`, { method: 'DELETE' });
-      reload();
-    } finally { setDeleting(null); }
+    await fetch(`/api/brain/file?name=${encodeURIComponent(name)}`,{method:"DELETE"});
+    setDeleting(null); load();
   };
-
   return (
-    <div className="panel" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-      <div className="panel-title" style={{ justifyContent: 'space-between' }}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <span style={{ fontSize: '11px' }}>🧠</span>
-          <span className="bracket">[</span>GEHIRN<span className="bracket">]</span>
-        </span>
-        <span style={{ color: 'var(--text-3)', fontSize: '9px' }}>
-          {loading ? '…' : `${files.length} Datei${files.length !== 1 ? 'en' : ''}`}
-        </span>
+    <div style={{display:"grid",gridTemplateRows:"auto 1fr auto",height:"100%",gap:14}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div>
+          <div style={{fontFamily:"var(--font-mono)",fontSize:11,color:"var(--ink-faint)",letterSpacing:".15em",textTransform:"uppercase"}}>WISSENSBASIS</div>
+          <div style={{fontFamily:"var(--font-display)",fontSize:22,marginTop:2}}>Gehirn · {files.length} Dateien</div>
+        </div>
+        <div style={{display:"flex",gap:8}}>
+          <span className="chip live">● aktiv</span>
+          <span className="chip">Drag & Drop zum Hochladen</span>
+        </div>
       </div>
-
-      <div style={{ flex: 1, overflowY: 'auto', padding: '6px 0' }}>
-        {loading && (
-          <div style={{ padding: '16px 12px', fontFamily: 'var(--mono)', fontSize: '9px', color: 'var(--text-3)', textAlign: 'center', letterSpacing: '0.1em' }}>
-            Lade…
+      <div className="glass" style={{overflow:"auto",padding:"8px 0"}}>
+        {loading && <div style={{textAlign:"center",padding:40,color:"var(--ink-faint)",fontFamily:"var(--font-mono)",fontSize:12}}>Lädt…</div>}
+        {!loading && files.length===0 && (
+          <div style={{textAlign:"center",padding:"60px 20px",color:"var(--ink-faint)"}}>
+            <div style={{fontSize:48,marginBottom:16}}>🧠</div>
+            <div style={{fontFamily:"var(--font-display)",fontSize:16,marginBottom:8}}>Gehirn ist leer</div>
+            <div style={{fontSize:13}}>Dateien per Drag & Drop auf die Seite ziehen</div>
           </div>
         )}
-        {!loading && files.length === 0 && (
-          <div style={{ padding: '20px 12px', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
-            <div style={{ fontSize: '28px', opacity: 0.3 }}>🧠</div>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: '9px', color: 'var(--text-3)', letterSpacing: '0.1em', lineHeight: 1.6 }}>
-              Noch leer.<br/>Dateien hier hinziehen.
+        {files.map((f,i)=>{
+          const ext=getExt(f.name); const col=extColor[ext]||"var(--ink-faint)";
+          return (
+            <div key={i} style={{display:"grid",gridTemplateColumns:"auto 1fr auto auto",gap:14,alignItems:"center",padding:"12px 18px",borderBottom:"1px solid rgba(255,255,255,.04)"}}>
+              <span style={{width:32,height:32,display:"grid",placeItems:"center",borderRadius:8,background:`${col}22`,fontFamily:"var(--font-mono)",fontSize:9,fontWeight:600,color:col,letterSpacing:0,flexShrink:0}}>
+                {ext.slice(0,4).toUpperCase()||"?"}
+              </span>
+              <div>
+                <div style={{fontSize:13,fontFamily:"var(--font-display)"}}>{f.name}</div>
+                <div style={{fontFamily:"var(--font-mono)",fontSize:10,color:"var(--ink-faint)",marginTop:2}}>{fmtSize(f.size)} · {new Date(f.modified*1000).toLocaleDateString("de-DE")}</div>
+              </div>
+              <span style={{fontFamily:"var(--font-mono)",fontSize:10,color:"var(--ink-faint)"}}>{fmtSize(f.size)}</span>
+              <button onClick={()=>del(f.name)} disabled={deleting===f.name} style={{background:"transparent",border:"1px solid rgba(255,255,255,.08)",borderRadius:8,padding:"6px 8px",cursor:"pointer",color:"var(--hue-c)",display:"flex",alignItems:"center",gap:4,opacity:deleting===f.name?0.4:1}}>
+                <Icons.Trash size={13} stroke="var(--hue-c)"/>
+              </button>
             </div>
-          </div>
-        )}
-        {files.map(f => (
-          <div key={f.name} style={{
-            padding: '5px 10px',
-            display: 'flex', alignItems: 'center', gap: '8px',
-            borderBottom: '1px solid var(--border)',
-            transition: 'background 0.1s',
-          }}
-          onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-3)'}
-          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-          >
-            {/* Ext badge */}
-            <div style={{
-              flexShrink: 0, width: '28px', textAlign: 'center',
-              fontFamily: 'var(--mono)', fontSize: '7px', fontWeight: 700,
-              letterSpacing: '0.05em', padding: '2px 3px',
-              border: `1px solid ${extColor(ext(f.name))}`,
-              borderRadius: '3px', color: extColor(ext(f.name)),
-              textTransform: 'uppercase',
-            }}>
-              {ext(f.name).slice(0,4)}
-            </div>
+          );
+        })}
+      </div>
+      <div className="glass" style={{padding:"12px 18px",display:"flex",gap:12,alignItems:"center"}}>
+        <Icons.Brain size={16} stroke="var(--hue-b)"/>
+        <div style={{fontSize:13,color:"var(--ink-dim)"}}>JARVIS kann auf alle Dateien zugreifen. Fragen Sie: <b style={{color:"var(--ink)"}}>„Was ist in meinem Gehirn?"</b></div>
+      </div>
+    </div>
+  );
+}
 
-            {/* Name + meta */}
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{
-                fontFamily: 'var(--mono)', fontSize: '10px', color: 'var(--text-1)',
-                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-              }} title={f.name}>{f.name}</div>
-              <div style={{ fontFamily: 'var(--mono)', fontSize: '8px', color: 'var(--text-3)' }}>
-                {fmtSize(f.size)} · {fmtDate(f.modified)}
+/* ---------- GITHUB (demo) ---------- */
+function GitHubModule() {
+  const prs=[{num:482,title:"feat: holographic voice orb shader",author:"claude",status:"open",reviews:2},{num:481,title:"fix: gantt drag overflow",author:"jarvis-bot",status:"open",reviews:1},{num:479,title:"docs: 3D viewer shortcuts",author:"anna",status:"merged",reviews:4}];
+  return (
+    <div style={{display:"grid",gridTemplateRows:"auto 1fr",gap:16,height:"100%"}}>
+      <div className="glass" style={{padding:20}}>
+        <div style={{fontFamily:"var(--font-mono)",fontSize:11,color:"var(--ink-faint)",letterSpacing:".15em"}}>REPOSITORY</div>
+        <div style={{fontFamily:"var(--font-display)",fontSize:24,marginTop:4}}>jarvis/core</div>
+        <div style={{display:"flex",gap:8,marginTop:10}}><span className="chip live">● synced</span><span className="chip">248 commits</span></div>
+      </div>
+      <div className="glass" style={{padding:20,overflow:"auto"}}>
+        <SectionHeader icon={<Icons.Branch size={14}/>} title="Pull Requests" sub={`${prs.filter(p=>p.status!=="merged").length} open`}/>
+        <div style={{marginTop:14,display:"flex",flexDirection:"column",gap:8}}>
+          {prs.map(pr=>(
+            <div key={pr.num} style={{display:"grid",gridTemplateColumns:"auto 1fr auto",gap:14,alignItems:"center",padding:"12px 14px",borderRadius:12,background:"rgba(255,255,255,.03)",border:"1px solid rgba(255,255,255,.06)"}}>
+              <div style={{fontFamily:"var(--font-mono)",fontSize:12,color:"var(--ink-faint)"}}>#{pr.num}</div>
+              <div><div style={{fontSize:14}}>{pr.title}</div><div style={{fontSize:11,color:"var(--ink-faint)",marginTop:2}}>@{pr.author}</div></div>
+              <span className={`chip ${pr.status==="open"?"live":""}`}>{pr.status}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- GANTT (demo) ---------- */
+function GanttModule() {
+  const tasks=[{id:1,name:"Discovery & Research",phase:"P1",start:0,dur:12,prog:100},{id:2,name:"Information Architecture",phase:"P1",start:8,dur:10,prog:100},{id:3,name:"Visual System",phase:"P2",start:18,dur:14,prog:85},{id:4,name:"Holographic Components",phase:"P2",start:22,dur:18,prog:72},{id:5,name:"Voice Orb Shader",phase:"P2",start:28,dur:8,prog:95},{id:6,name:"3D Viewer Integration",phase:"P2",start:32,dur:14,prog:45},{id:7,name:"GitHub Connector",phase:"P2",start:36,dur:10,prog:30},{id:8,name:"Public Launch",phase:"P3",start:60,dur:2,prog:0}];
+  const totalWeeks=64, today=38;
+  const phaseColor={P1:"var(--hue-a)",P2:"var(--hue-b)",P3:"var(--hue-c)"};
+  return (
+    <div style={{display:"grid",gridTemplateRows:"auto 1fr",gap:14,height:"100%"}}>
+      <div style={{display:"flex",gap:8}}><span className="chip live">● on track</span><span className="chip">8 tasks</span></div>
+      <div className="glass" style={{padding:20,overflow:"auto"}}>
+        {tasks.map(t=>(
+          <div key={t.id} style={{display:"grid",gridTemplateColumns:"200px 1fr",gap:16,alignItems:"center",padding:"8px 0",borderBottom:"1px solid rgba(255,255,255,.04)"}}>
+            <div style={{fontSize:13}}>{t.name}<div style={{fontFamily:"var(--font-mono)",fontSize:10,color:"var(--ink-faint)",marginTop:2}}>{t.phase}</div></div>
+            <div style={{position:"relative",height:24}}>
+              <div style={{position:"absolute",left:`${(today/totalWeeks)*100}%`,top:-6,bottom:-6,width:1,background:"var(--hue-d)",opacity:.4}}/>
+              <div style={{position:"absolute",left:`${(t.start/totalWeeks)*100}%`,width:`${(t.dur/totalWeeks)*100}%`,top:4,bottom:4,borderRadius:6,background:`${phaseColor[t.phase]}`,opacity:.3,overflow:"hidden"}}>
+                <div style={{width:`${t.prog}%`,height:"100%",background:phaseColor[t.phase],boxShadow:`0 0 12px ${phaseColor[t.phase]}`}}/>
               </div>
             </div>
-
-            {/* Delete */}
-            <button
-              onClick={() => deleteFile(f.name)}
-              disabled={deleting === f.name}
-              title="Löschen"
-              style={{
-                flexShrink: 0, background: 'transparent',
-                border: 'none', color: 'var(--text-3)',
-                cursor: 'pointer', fontSize: '11px', padding: '2px 4px',
-                borderRadius: '3px', lineHeight: 1,
-                opacity: deleting === f.name ? 0.4 : 1,
-              }}
-              onMouseEnter={e => e.currentTarget.style.color = 'var(--red)'}
-              onMouseLeave={e => e.currentTarget.style.color = 'var(--text-3)'}
-            >✕</button>
           </div>
         ))}
       </div>
+    </div>
+  );
+}
 
-      {/* Drop hint */}
-      <div style={{
-        padding: '6px 12px', borderTop: '1px solid var(--border)',
-        fontFamily: 'var(--mono)', fontSize: '8px', color: 'var(--text-3)',
-        textAlign: 'center', letterSpacing: '0.08em',
-      }}>
-        Drag &amp; Drop zum Hinzufügen
+/* ---------- TEXT EDITOR ---------- */
+function TextEditorModule() {
+  const [doc, setDoc] = useS(`# JARVIS Notes\n\nWillkommen im Editor. Schreiben Sie hier Ihre Notizen.\n\n## Schnellzugriff\n- Brain-Dateien per Drag & Drop hochladen\n- Kalender über Morning Briefing abrufen\n- Hardware-Datasheets per Chat laden\n`);
+  const wordCount = doc.split(/\s+/).filter(Boolean).length;
+  return (
+    <div style={{display:"grid",gridTemplateRows:"auto 1fr",gap:14,height:"100%"}}>
+      <div className="glass" style={{padding:"10px 16px",display:"flex",gap:8,alignItems:"center"}}>
+        <span className="chip live">● auto-saved</span>
+        <span className="chip">{wordCount} words</span>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,minHeight:0}}>
+        <div className="glass" style={{overflow:"hidden",display:"grid",gridTemplateRows:"auto 1fr"}}>
+          <div style={{padding:"8px 16px",fontFamily:"var(--font-mono)",fontSize:10,letterSpacing:".18em",color:"var(--ink-faint)",textTransform:"uppercase",borderBottom:"1px solid var(--glass-border)"}}>MARKDOWN</div>
+          <textarea value={doc} onChange={e=>setDoc(e.target.value)} style={{width:"100%",height:"100%",background:"transparent",border:"none",outline:"none",padding:"16px 20px",color:"var(--ink)",fontFamily:"var(--font-mono)",fontSize:13,lineHeight:1.6,resize:"none"}}/>
+        </div>
+        <div className="glass" style={{overflow:"hidden",display:"grid",gridTemplateRows:"auto 1fr"}}>
+          <div style={{padding:"8px 16px",fontFamily:"var(--font-mono)",fontSize:10,letterSpacing:".18em",color:"var(--ink-faint)",textTransform:"uppercase",borderBottom:"1px solid var(--glass-border)"}}>PREVIEW</div>
+          <div style={{overflow:"auto",padding:"16px 22px",fontSize:14,lineHeight:1.7,color:"var(--ink-dim)",whiteSpace:"pre-wrap"}}>{doc}</div>
+        </div>
       </div>
     </div>
   );
 }
 
-// ─── RIGHT PANEL ─────────────────────────────────────────────────────────────
-
-function RightPanel({ calEvents, calLoading, calError }) {
+/* ---------- MIND MAP ---------- */
+function MindMapModule() {
+  const W=1100,H=600,cx=W/2,cy=H/2;
+  const branches=[{id:"a",label:"Sprachsteuerung",color:"var(--hue-b)",children:["Wake Word","TTS","Multi-Lang"]},{id:"b",label:"Holographic UI",color:"var(--hue-c)",children:["Glassmorphism","3D Orb","Iridescence"]},{id:"c",label:"Tools",color:"var(--hue-d)",children:["Kalender","GitHub","Gehirn"]},{id:"d",label:"Intelligence",color:"var(--hue-e)",children:["Briefing","Memory","Agents"]}];
   return (
-    <div style={{ width: '240px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
-      <CalendarPanel calEvents={calEvents} calLoading={calLoading} calError={calError} />
-      <BrainPanel />
+    <div className="glass" style={{height:"100%",position:"relative",overflow:"hidden"}}>
+      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet" style={{width:"100%",height:"100%"}}>
+        {branches.map((b,i)=>{
+          const angle=(i/branches.length)*Math.PI*2-Math.PI/2;
+          const bx=cx+Math.cos(angle)*200, by=cy+Math.sin(angle)*200;
+          return (
+            <g key={b.id}>
+              <line x1={cx} y1={cy} x2={bx} y2={by} stroke={b.color} strokeWidth="1.5" opacity=".5"/>
+              <circle cx={bx} cy={by} r={52} fill="rgba(8,8,31,.85)" stroke={b.color} strokeWidth="1.5" style={{filter:`drop-shadow(0 0 12px ${b.color})`}}/>
+              <text x={bx} y={by} textAnchor="middle" dominantBaseline="middle" fontFamily="var(--font-display)" fontSize="11" fill="var(--ink)">{b.label}</text>
+              {b.children.map((c,j)=>{
+                const span=0.7, ca=angle+(j-(b.children.length-1)/2)*(span/b.children.length);
+                const ccx=cx+Math.cos(ca)*360, ccy=cy+Math.sin(ca)*360;
+                return (
+                  <g key={j}>
+                    <line x1={bx} y1={by} x2={ccx} y2={ccy} stroke={b.color} strokeWidth="1" opacity=".35"/>
+                    <circle cx={ccx} cy={ccy} r={34} fill="rgba(8,8,31,.85)" stroke={b.color} strokeWidth="1"/>
+                    <text x={ccx} y={ccy} textAnchor="middle" dominantBaseline="middle" fontFamily="var(--font-display)" fontSize="9" fill="var(--ink-dim)">{c}</text>
+                  </g>
+                );
+              })}
+            </g>
+          );
+        })}
+        <circle cx={cx} cy={cy} r={72} fill="rgba(8,8,31,.9)" stroke="var(--hue-a)" strokeWidth="2" style={{filter:"drop-shadow(0 0 18px var(--hue-a))"}}/>
+        <text x={cx} y={cy} textAnchor="middle" dominantBaseline="middle" fontFamily="var(--font-display)" fontSize="14" fontWeight="600" fill="var(--ink)">JARVIS</text>
+      </svg>
     </div>
   );
 }
 
-function CalendarPanel({ calEvents, calLoading, calError }) {
-  const now   = new Date();
-  const year  = now.getFullYear();
-  const month = now.getMonth();
-  const monthNames = ['JAN','FEB','MRZ','APR','MAI','JUN','JUL','AUG','SEP','OKT','NOV','DEZ'];
+Object.assign(window, { MorningBriefing, ChatVoice, BrainModule, GitHubModule, GanttModule, MindMapModule, TextEditorModule });
+</script>
 
-  const [selected, setSelected] = useState(now.getDate());
+<!-- app -->
+<script type="text/babel" data-presets="react">
+(function(){
+const { useState, useEffect, useRef } = React;
 
-  // Build day → events map from real API data
-  const events = {};
-  calEvents.forEach(ev => {
-    const d = new Date(ev.start.includes('T') ? ev.start : ev.start + 'T00:00:00');
-    if (d.getFullYear() === year && d.getMonth() === month) {
-      const day = d.getDate();
-      if (!events[day]) events[day] = [];
-      events[day].push({
-        t: ev.start.includes('T')
-          ? new Date(ev.start).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
-          : 'Ganztägig',
-        label:    ev.summary,
-        location: ev.location,
-        color:    d.toDateString() === now.toDateString() ? 'var(--cyan)' : 'var(--amber)',
-      });
+const ALL_TOOLS = [
+  { id:"briefing", name:"Morning Briefing", short:"BRIEF", icon:"Sunrise",  side:"left",  num:"—",  sub:"Tages-Überblick" },
+  { id:"chat",     name:"Chat",             short:"CHAT",  icon:"Sparkle",  side:"left",  num:"—",  sub:"Assistent" },
+  { id:"brain",    name:"Gehirn",           short:"BRAIN", icon:"Brain",    side:"left",  num:"—",  sub:"Wissensbasis" },
+  { id:"editor",   name:"Text Editor",      short:"EDIT",  icon:"Edit",     side:"left",  num:"—",  sub:"Markdown" },
+  { id:"viewer",   name:"3D Viewer",        short:"3D",    icon:"Cube",     side:"right", num:"5",  sub:"Modelle geladen" },
+  { id:"github",   name:"GitHub",           short:"GH",    icon:"Github",   side:"right", num:"3",  sub:"PRs offen" },
+  { id:"mindmap",  name:"Mind Map",         short:"MIND",  icon:"Globe",    side:"right", num:"12", sub:"Knoten aktiv" },
+  { id:"gantt",    name:"Gantt",            short:"GANTT", icon:"Gantt",    side:"right", num:"78%",sub:"Phase 2 · on track" },
+];
+
+const TWEAK_DEFAULTS = {
+  tools: { briefing:true, chat:true, brain:true, editor:true, viewer:true, github:true, mindmap:true, gantt:true }
+};
+
+function useJarvisWS() {
+  const [jarvisState, setJarvisState] = useState({ status:"offline", activity_log:[], stats:{} });
+  const [connected, setConnected] = useState(false);
+  const wsRef = useRef(null);
+  const reconnectRef = useRef(null);
+  const connect = () => {
+    try {
+      const ws = new WebSocket(`ws://${location.host}/ws`);
+      wsRef.current = ws;
+      ws.onopen = () => { setConnected(true); if(reconnectRef.current) clearTimeout(reconnectRef.current); };
+      ws.onclose = () => { setConnected(false); reconnectRef.current = setTimeout(connect, 3500); };
+      ws.onerror = () => ws.close();
+      ws.onmessage = e => {
+        try {
+          const msg = JSON.parse(e.data);
+          if (msg.type === "state_update") setJarvisState(msg.data);
+        } catch(err) {}
+      };
+    } catch(err) { reconnectRef.current = setTimeout(connect, 3500); }
+  };
+  useEffect(() => {
+    connect();
+    return () => { if(wsRef.current) wsRef.current.close(); if(reconnectRef.current) clearTimeout(reconnectRef.current); };
+  }, []);
+  return { jarvisState, connected };
+}
+
+function useCalendar() {
+  const [calEvents, setCalEvents] = useState([]);
+  const [calLoading, setCalLoading] = useState(true);
+  const [calError, setCalError] = useState(null);
+  const load = () => {
+    fetch("/api/calendar").then(r=>r.json()).then(d=>{ setCalEvents(d.events||[]); setCalLoading(false); }).catch(err=>{ setCalError(err.message); setCalLoading(false); });
+  };
+  useEffect(() => { load(); const id=setInterval(load,60000); return ()=>clearInterval(id); }, []);
+  return { calEvents, calLoading, calError };
+}
+
+function activityToMessages(log) {
+  return [...log].reverse()
+    .filter(item => ["user","assistant","tool"].includes(item.type))
+    .map(item => ({
+      id: item.id,
+      role: item.type==="user" ? "user" : item.type==="tool" ? "tool" : "jarvis",
+      text: item.content,
+      tool: item.tool,
+      ts: new Date(item.timestamp).toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"}),
+    }));
+}
+
+function renderOpenModule(id, props) {
+  if (id==="briefing") return <MorningBriefing calEvents={props.calEvents} calLoading={props.calLoading}/>;
+  if (id==="chat")     return <ChatVoice messages={props.liveMessages} onSend={props.onSend} thinking={props.thinking}/>;
+  if (id==="brain")    return <BrainModule/>;
+  if (id==="editor")   return <TextEditorModule/>;
+  if (id==="viewer")   return <Viewer3D/>;
+  if (id==="github")   return <GitHubModule/>;
+  if (id==="mindmap")  return <MindMapModule/>;
+  if (id==="gantt")    return <GanttModule/>;
+  return null;
+}
+
+function App() {
+  const [t, setT] = useTweaks(TWEAK_DEFAULTS);
+  const [openModule, setOpenModule] = useState("briefing");
+  const [listening, setListening] = useState(false);
+  const [voiceIntensity, setVoiceIntensity] = useState(0.25);
+  const [inlineInput, setInlineInput] = useState("");
+  const [thinking, setThinking] = useState(false);
+  const [now, setNow] = useState(new Date());
+  const { jarvisState, connected } = useJarvisWS();
+  const { calEvents, calLoading } = useCalendar();
+  const liveMessages = activityToMessages(jarvisState.activity_log || []);
+
+  useEffect(() => { const id=setInterval(()=>setNow(new Date()),30000); return ()=>clearInterval(id); }, []);
+
+  useEffect(() => {
+    if (!listening) {
+      const decay=setInterval(()=>setVoiceIntensity(v=>Math.max(0.18,v*0.92)),50);
+      return ()=>clearInterval(decay);
     }
-  });
+    const id=setInterval(()=>setVoiceIntensity(0.45+Math.random()*0.5),120);
+    return ()=>clearInterval(id);
+  }, [listening]);
 
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const firstDay    = new Date(year, month, 1).getDay();
-  const startPad    = firstDay === 0 ? 6 : firstDay - 1;
-  const dayNames    = ['Mo','Di','Mi','Do','Fr','Sa','So'];
+  const onSend = async (text) => {
+    setThinking(true);
+    try {
+      await fetch("/api/chat", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({message:text}) });
+    } catch(err) { console.error("Chat error:", err); }
+    setThinking(false);
+  };
 
-  return (
-    <div className="panel" style={{ flex: '0 0 auto' }}>
-      <div className="panel-title">
-        <span className="bracket">[</span>KALENDER — {monthNames[month]} {year}<span className="bracket">]</span>
-      </div>
+  const onInlineSend = () => {
+    if (!inlineInput.trim()) return;
+    onSend(inlineInput);
+    setInlineInput("");
+    setOpenModule("chat");
+  };
 
-      {calLoading && (
-        <div style={{ padding: '12px', fontFamily: 'var(--mono)', fontSize: '9px', color: 'var(--text-3)', textAlign: 'center', letterSpacing: '0.1em' }}>
-          Synchronisiere…
-        </div>
-      )}
-      {calError && !calLoading && (
-        <div style={{ padding: '8px 12px', fontFamily: 'var(--mono)', fontSize: '9px', color: 'var(--red)', textAlign: 'center' }}>
-          {calError}
-        </div>
-      )}
-
-      <div style={{ padding: '8px 10px' }}>
-        {/* Day headers */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', marginBottom: '4px' }}>
-          {dayNames.map(d => (
-            <div key={d} style={{ textAlign: 'center', fontFamily: 'var(--mono)', fontSize: '8px', color: 'var(--text-3)', padding: '2px 0' }}>{d}</div>
-          ))}
-        </div>
-        {/* Days */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: '2px' }}>
-          {Array(startPad).fill(null).map((_, i) => <div key={`pad-${i}`}/>)}
-          {Array.from({length: daysInMonth}, (_, i) => i+1).map(d => {
-            const isToday    = d === now.getDate();
-            const isSelected = d === selected;
-            const hasEvent   = !!events[d];
-            return (
-              <div key={d} onClick={() => setSelected(d)} style={{
-                textAlign: 'center', padding: '3px 0',
-                fontFamily: 'var(--mono)', fontSize: '10px',
-                borderRadius: '3px', cursor: 'pointer',
-                background: isSelected ? 'var(--cyan-faint)' : 'transparent',
-                color: isToday ? 'var(--cyan)' : 'var(--text-2)',
-                border: isToday ? '1px solid var(--cyan-dim)' : '1px solid transparent',
-                fontWeight: isToday ? 700 : 400,
-                position: 'relative',
-                transition: 'all 0.1s',
-              }}>
-                {d}
-                {hasEvent && <div style={{ position: 'absolute', bottom: '1px', left: '50%', transform: 'translateX(-50%)', width: '3px', height: '3px', borderRadius: '50%', background: events[d][0].color }}/>}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Events for selected day */}
-      {events[selected] ? (
-        <div style={{ borderTop: '1px solid var(--border)', padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          {events[selected].map((ev, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-              <div style={{ width: '2px', height: '22px', background: ev.color, borderRadius: '1px', flexShrink: 0, marginTop: '2px' }}/>
-              <div>
-                <div style={{ fontFamily: 'var(--mono)', fontSize: '9px', color: 'var(--text-3)' }}>{ev.t}</div>
-                <div style={{ fontFamily: 'var(--sans)', fontSize: '11px', color: 'var(--text-1)' }}>{ev.label}</div>
-                {ev.location && <div style={{ fontFamily: 'var(--mono)', fontSize: '9px', color: 'var(--text-3)' }}>◈ {ev.location}</div>}
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : !calLoading && (
-        <div style={{ borderTop: '1px solid var(--border)', padding: '8px 10px', fontFamily: 'var(--mono)', fontSize: '9px', color: 'var(--text-3)', textAlign: 'center' }}>
-          Keine Termine am {selected}.{String(month+1).padStart(2,'0')}.
-        </div>
-      )}
-    </div>
-  );
-}
-
-function TokenPanel() {
-  const totalUsed  = MONTHLY_USED;
-  const totalLimit = MONTHLY_LIMIT;
-  const pct  = (totalUsed / totalLimit * 100).toFixed(1);
-  const maxDay = Math.max(...TOKEN_HISTORY.map(d => d.input + d.output));
-  const cost = (totalUsed / 1_000_000 * 5).toFixed(2);
+  const tools = ALL_TOOLS.filter(tool => t.tools[tool.id]);
+  const leftTools = tools.filter(x=>x.side==="left");
+  const rightTools = tools.filter(x=>x.side==="right");
+  const time = now.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});
+  const greet = now.getHours()<11 ? "Guten Morgen" : now.getHours()<18 ? "Guten Tag" : "Guten Abend";
+  const openComp = openModule ? ALL_TOOLS.find(x=>x.id===openModule) : null;
+  const jarvisStatus = !connected ? "offline" : jarvisState.status || "idle";
+  const statusLabel = jarvisStatus==="offline" ? "OFFLINE" : jarvisStatus==="processing" ? "● VERARBEITUNG" : "● SYSTEM BEREIT";
+  const lastMsg = liveMessages.length>0 ? liveMessages[liveMessages.length-1] : null;
 
   return (
-    <div className="panel" style={{ flex: 1 }}>
-      <div className="panel-title">
-        <span className="bracket">[</span>OPENAI TOKENS<span className="bracket">]</span>
-      </div>
-      <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-
-        {/* Monthly usage */}
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--mono)', fontSize: '9px', marginBottom: '4px' }}>
-            <span style={{ color: 'var(--text-3)' }}>MONAT</span>
-            <span style={{ color: 'var(--cyan)' }}>{(totalUsed/1000).toFixed(0)}k / {(totalLimit/1000000).toFixed(0)}M</span>
+    <>
+      <div className="app-shell">
+        <div className="topbar glass">
+          <div className="brand">
+            <span className="brand-mark">J</span>
+            <span>JARVIS · 2.0</span>
           </div>
-          <div style={{ height: '6px', background: 'var(--bg-3)', borderRadius: '3px', overflow: 'hidden' }}>
-            <div style={{ width: `${pct}%`, height: '100%', background: 'linear-gradient(90deg, var(--cyan-dim), var(--cyan))', borderRadius: '3px', boxShadow: '0 0 8px var(--cyan-faint)' }}/>
+          <div className="greet">{greet}, <b>Sir</b></div>
+          <div className="status">
+            <span>
+              <span className={`dot ${jarvisStatus}`}/>
+              {statusLabel}
+            </span>
+            <span style={{fontFamily:"var(--font-display)",fontSize:16,color:"var(--ink)"}}>{time}</span>
           </div>
-          <div style={{ fontFamily: 'var(--mono)', fontSize: '9px', color: 'var(--text-3)', marginTop: '3px' }}>{pct}% — ca. ${cost} diese Woche</div>
         </div>
 
-        {/* Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
-          <StatBox label="INPUT"  val={(TOKEN_HISTORY.reduce((a,d)=>a+d.input,0)/1000).toFixed(0)+'k'}  color="var(--cyan)" />
-          <StatBox label="OUTPUT" val={(TOKEN_HISTORY.reduce((a,d)=>a+d.output,0)/1000).toFixed(0)+'k'} color="var(--green)" />
-          <StatBox label="CACHED" val={(TOKEN_HISTORY.reduce((a,d)=>a+d.cached,0)/1000).toFixed(0)+'k'} color="var(--amber)" />
-          <StatBox label="KOSTEN" val={'$'+cost} color="var(--text-1)" />
-        </div>
-
-        {/* Daily chart */}
-        <div>
-          <div style={{ fontFamily: 'var(--mono)', fontSize: '9px', color: 'var(--text-3)', marginBottom: '6px', letterSpacing: '0.1em' }}>7-TAGE VERLAUF</div>
-          <div style={{ display: 'flex', gap: '4px', alignItems: 'flex-end', height: '48px' }}>
-            {TOKEN_HISTORY.map((d, i) => {
-              const h = Math.round(((d.input + d.output) / maxDay) * 44);
-              const isToday = i === 4;
+        <div className="stage">
+          <div className="rail">
+            {leftTools.map(tool => {
+              const I = Icons[tool.icon];
               return (
-                <div key={d.day} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
-                  <div style={{ width: '100%', height: `${h}px`, background: isToday ? 'var(--cyan)' : 'var(--bg-3)', borderRadius: '2px 2px 0 0', boxShadow: isToday ? '0 0 8px var(--cyan-faint)' : 'none', transition: 'height 0.5s ease', position: 'relative', overflow: 'hidden' }}>
-                    {isToday && <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, var(--cyan), var(--cyan-dim))'}}/>}
+                <div key={tool.id} className="glass rail-card" onClick={()=>setOpenModule(tool.id)}>
+                  <div className="ttl"><span><I size={12}/> {tool.short}</span><span>›</span></div>
+                  <div style={{display:"flex",alignItems:"baseline",gap:8,marginTop:2}}>
+                    <span className="num">{tool.num}</span>
+                    <span style={{fontFamily:"var(--font-display)",fontSize:13,color:"var(--ink)"}}>{tool.name}</span>
                   </div>
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: '8px', color: isToday ? 'var(--cyan)' : 'var(--text-3)' }}>{d.day}</span>
+                  <div className="sub">{tool.sub}</div>
                 </div>
               );
             })}
+            <div className="glass rail-card" style={{flex:1,display:"flex",flexDirection:"column",justifyContent:"flex-end",cursor:"default"}}>
+              <div style={{fontFamily:"var(--font-mono)",fontSize:10,color:"var(--ink-faint)",letterSpacing:".18em",marginBottom:8}}>SYSTEM</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                {[["STATUS",connected?"ONLINE":"OFFLINE"],["MODEL","GPT-4o"],["WS",connected?"OK":"—"],["LOG",(jarvisState.activity_log||[]).length+""]].map(([k,v])=>(
+                  <div key={k} style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",padding:"4px 8px",borderRadius:6,background:"rgba(255,255,255,.025)"}}>
+                    <span style={{fontFamily:"var(--font-mono)",fontSize:9,color:"var(--ink-faint)",letterSpacing:".12em"}}>{k}</span>
+                    <span style={{fontFamily:"var(--font-mono)",fontSize:11,color:k==="STATUS"&&!connected?"var(--hue-c)":"var(--ink)"}}>{v}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="center">
+            <Orb intensity={voiceIntensity} state={listening?"listening":"idle"}/>
+            <div className="orb-caption">
+              <div className="state">{listening?"● ZUHÖREN":thinking?"● DENKT…":"BEREIT"}</div>
+              <div className="said">{lastMsg ? lastMsg.text.slice(0,120)+(lastMsg.text.length>120?"…":"") : "Wie kann ich helfen, Sir?"}</div>
+            </div>
+          </div>
+
+          <div className="rail">
+            {rightTools.map(tool => {
+              const I = Icons[tool.icon];
+              return (
+                <div key={tool.id} className="glass rail-card" onClick={()=>setOpenModule(tool.id)}>
+                  <div className="ttl"><span><I size={12}/> {tool.short}</span><span>›</span></div>
+                  <div style={{display:"flex",alignItems:"baseline",gap:8,marginTop:2}}>
+                    <span className="num">{tool.num}</span>
+                    <span style={{fontFamily:"var(--font-display)",fontSize:13,color:"var(--ink)"}}>{tool.name}</span>
+                  </div>
+                  <div className="sub">{tool.sub}</div>
+                </div>
+              );
+            })}
+            <div className="glass rail-card" style={{flex:1,display:"flex",flexDirection:"column",justifyContent:"flex-end",cursor:"default"}}>
+              <div style={{fontFamily:"var(--font-mono)",fontSize:10,color:"var(--ink-faint)",letterSpacing:".18em",marginBottom:8}}>SENSOREN</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                {[["MIC",listening?"ON":"OFF"],["CAM","OFF"],["LAT","—"],["CAL",calLoading?"…":calEvents.length+""]].map(([k,v])=>(
+                  <div key={k} style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",padding:"4px 8px",borderRadius:6,background:"rgba(255,255,255,.025)"}}>
+                    <span style={{fontFamily:"var(--font-mono)",fontSize:9,color:"var(--ink-faint)",letterSpacing:".12em"}}>{k}</span>
+                    <span style={{fontFamily:"var(--font-mono)",fontSize:11,color:k==="MIC"&&listening?"var(--hue-d)":"var(--ink)"}}>{v}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Model breakdown */}
-        <div>
-          <div style={{ fontFamily: 'var(--mono)', fontSize: '9px', color: 'var(--text-3)', marginBottom: '6px', letterSpacing: '0.1em' }}>MODELLE</div>
-          <div className="bar-container">
-            <div className="bar-row">
-              <span className="bar-label">gpt-4o</span>
-              <div className="bar-track"><div className="bar-fill" style={{ width: '68%', background: 'var(--cyan)' }}/></div>
-              <span className="bar-val">68%</span>
+        <div className="composer glass glass-strong">
+          <button className={`mic-btn ${listening?"active":""}`} onClick={()=>setListening(l=>!l)} title="Mikrofon">
+            <Icons.Mic size={22} stroke={listening?"#050516":"var(--ink)"}/>
+          </button>
+          <input
+            value={inlineInput}
+            onChange={e=>setInlineInput(e.target.value)}
+            onKeyDown={e=>e.key==="Enter"&&onInlineSend()}
+            placeholder="Sprechen Sie mit JARVIS… oder drücken Sie das Mikrofon"
+          />
+          <button className="send-btn" title="Chat öffnen" onClick={()=>{ if(inlineInput.trim()) onInlineSend(); else setOpenModule("chat"); }}>
+            <Icons.Sparkle size={22} stroke="var(--hue-a)"/>
+          </button>
+        </div>
+      </div>
+
+      {openComp && (
+        <div className="panel-backdrop" onClick={e=>{ if(e.target.classList.contains("panel-backdrop")) setOpenModule(null); }}>
+          <div className="panel glass glass-strong">
+            <div className="panel-header">
+              <span className="badge">
+                {openComp.icon && React.createElement(Icons[openComp.icon],{size:16,stroke:"#050516"})}
+              </span>
+              <div className="title">
+                {openComp.name}
+                <small>{openComp.short} · {openComp.sub}</small>
+              </div>
+              <button className="close" onClick={()=>setOpenModule(null)} aria-label="Schließen">
+                <Icons.X size={16}/>
+              </button>
             </div>
-            <div className="bar-row">
-              <span className="bar-label">gpt-4o-mini</span>
-              <div className="bar-track"><div className="bar-fill" style={{ width: '24%', background: 'var(--green)' }}/></div>
-              <span className="bar-val">24%</span>
-            </div>
-            <div className="bar-row">
-              <span className="bar-label">o1</span>
-              <div className="bar-track"><div className="bar-fill" style={{ width: '8%', background: 'var(--amber)' }}/></div>
-              <span className="bar-val">8%</span>
+            <div className="panel-body">
+              {renderOpenModule(openModule, { calEvents, calLoading, liveMessages, onSend, thinking })}
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      )}
+
+      <TweaksPanel title="Tools">
+        <TweakSection label="Sichtbare Tools">
+          {ALL_TOOLS.map(tool=>(
+            <TweakToggle key={tool.id} label={tool.name} value={t.tools[tool.id]} onChange={v=>setT({tools:{...t.tools,[tool.id]:v}})}/>
+          ))}
+        </TweakSection>
+      </TweaksPanel>
+    </>
   );
 }
 
-function StatBox({ label, val, color }) {
-  return (
-    <div style={{ background: 'var(--bg-3)', border: '1px solid var(--border)', borderRadius: '4px', padding: '6px 8px' }}>
-      <div style={{ fontFamily: 'var(--mono)', fontSize: '8px', color: 'var(--text-3)', letterSpacing: '0.1em' }}>{label}</div>
-      <div style={{ fontFamily: 'var(--mono)', fontSize: '14px', fontWeight: 600, color, marginTop: '2px' }}>{val}</div>
-    </div>
-  );
-}
-
-// ─── APP ─────────────────────────────────────────────────────────────────────
-
-function App() {
-  const [time, setTime]   = useState('');
-  const [cpu, setCpu]     = useState(34);
-  const [mem, setMem]     = useState(62);
-  const [activeServer, setActiveServer] = useState(null);
-  const [viewer, setViewer] = useState(null);
-
-  const { jarvisState, connected }          = useJarvisWS();
-  const { calEvents, calLoading, calError } = useCalendar();
-
-  const liveMessages = jarvisState.activity_log.length > 0
-    ? activityToMessages(jarvisState.activity_log)
-    : null;
-
-  const openViewer = useCallback((src) => {
-    const isUrl = /^https?:\/\//.test(src);
-    const isPdf = src.toLowerCase().endsWith('.pdf');
-    const type  = isUrl ? 'url' : isPdf ? 'pdf' : 'text';
-    const title = isUrl
-      ? (() => { try { return new URL(src).hostname; } catch { return src; } })()
-      : src.split(/[/\\]/).pop();
-    setViewer({ type, src, title });
-  }, []);
-
-  useEffect(() => {
-    const tick = () => {
-      const d = new Date();
-      setTime(`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`);
-    };
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, []);
-
-  useEffect(() => {
-    const id = setInterval(() => {
-      setCpu(v => Math.min(95, Math.max(5, v + (Math.random()-0.5)*8)));
-      setMem(v => Math.min(95, Math.max(40, v + (Math.random()-0.5)*4)));
-    }, 2500);
-    return () => clearInterval(id);
-  }, []);
-
-  return (
-    <div id="root" style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
-      <Header
-        time={time}
-        cpuLoad={Math.round(cpu)}
-        memLoad={Math.round(mem)}
-        jarvisStatus={jarvisState.status}
-        wsConnected={connected}
-      />
-      <div style={{ flex: 1, display: 'flex', gap: '8px', padding: '8px', overflow: 'hidden', minHeight: 0 }}>
-        <LeftPanel activeServer={activeServer} setActiveServer={setActiveServer} />
-        <ChatPanel liveMessages={liveMessages} openViewer={openViewer} viewerOpen={!!viewer} />
-        {viewer
-          ? <ViewerPanel viewer={viewer} onClose={() => setViewer(null)} />
-          : <RightPanel calEvents={calEvents} calLoading={calLoading} calError={calError} />
-        }
-      </div>
-    </div>
-  );
-}
-
-ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+})();
 </script>
 </body>
 </html>
