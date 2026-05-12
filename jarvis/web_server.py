@@ -4,11 +4,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import uvicorn
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File
+from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from jarvis.state import jarvis_state
+
+BRAIN_DIR = Path.home() / ".jarvis" / "brain"
 
 STATIC_DIR = Path(__file__).parent / "static"
 
@@ -70,6 +72,57 @@ async def get_calendar():
         return {"success": True, "events": events}
     except Exception as exc:
         return {"success": False, "error": str(exc), "events": []}
+
+
+@app.post("/api/brain/upload")
+async def brain_upload(file: UploadFile = File(...)):
+    BRAIN_DIR.mkdir(parents=True, exist_ok=True)
+    # Dateiname sicher machen
+    safe_name = Path(file.filename).name
+    safe_name = "".join(c for c in safe_name if c.isalnum() or c in "._- ()[]").strip()
+    if not safe_name:
+        safe_name = "unnamed"
+    dest = BRAIN_DIR / safe_name
+    # Bei Namenskonflikt Suffix anhängen
+    if dest.exists():
+        stem, suffix = dest.stem, dest.suffix
+        i = 1
+        while dest.exists():
+            dest = BRAIN_DIR / f"{stem}_{i}{suffix}"
+            i += 1
+    content = await file.read()
+    dest.write_bytes(content)
+    size_str = f"{len(content) // 1024} KB" if len(content) >= 1024 else f"{len(content)} B"
+    return JSONResponse({"ok": True, "name": dest.name, "size": size_str})
+
+
+@app.get("/api/brain/list")
+async def brain_list():
+    BRAIN_DIR.mkdir(parents=True, exist_ok=True)
+    files = sorted(
+        [f for f in BRAIN_DIR.iterdir() if f.is_file() and not f.name.startswith(".")],
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+    return JSONResponse({
+        "files": [
+            {
+                "name": f.name,
+                "size": f.stat().st_size,
+                "modified": datetime.fromtimestamp(f.stat().st_mtime).isoformat(),
+            }
+            for f in files
+        ]
+    })
+
+
+@app.delete("/api/brain/file")
+async def brain_delete(name: str):
+    path = BRAIN_DIR / Path(name).name
+    if not path.exists():
+        return JSONResponse({"ok": False, "error": "Nicht gefunden"}, status_code=404)
+    path.unlink()
+    return JSONResponse({"ok": True})
 
 
 @app.get("/api/view/file")

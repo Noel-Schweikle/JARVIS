@@ -272,6 +272,221 @@ TOOL_SCHEMAS = _CLAUDE_CODING_SCHEMAS + [
             },
         },
     },
+    # ── Gehirn (Brain-Dateispeicher) ─────────────────────────────────────────
+    {
+        "type": "function",
+        "function": {
+            "name": "brain_list",
+            "description": "Listet alle Dateien im JARVIS-Gehirn auf (~/.jarvis/brain/)",
+            "parameters": {"type": "object", "properties": {}, "required": []},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "brain_read",
+            "description": (
+                "Liest eine Datei aus dem JARVIS-Gehirn. Unterstützt Text, Markdown, PDF, Code, CSV etc. "
+                "Nutze dieses Tool wenn der Nutzer nach Inhalten einer hochgeladenen Datei fragt."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "filename": {"type": "string", "description": "Dateiname (aus brain_list)"},
+                },
+                "required": ["filename"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "brain_search",
+            "description": "Durchsucht alle Text-Dateien im Gehirn nach einem Suchbegriff",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "Suchbegriff"},
+                },
+                "required": ["query"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "brain_delete",
+            "description": "Löscht eine Datei aus dem JARVIS-Gehirn",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "filename": {"type": "string", "description": "Dateiname"},
+                },
+                "required": ["filename"],
+            },
+        },
+    },
+    # ── Todo-Liste ───────────────────────────────────────────────────────────
+    {
+        "type": "function",
+        "function": {
+            "name": "todo_add",
+            "description": "Fügt eine neue Aufgabe zur Todo-Liste hinzu",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "title":    {"type": "string", "description": "Titel der Aufgabe"},
+                    "priority": {"type": "string", "description": "'hoch', 'mittel' oder 'niedrig' (Standard: 'mittel')"},
+                    "deadline": {"type": "string", "description": "Fälligkeitsdatum ISO-8601, z.B. 2024-06-01 (optional)"},
+                    "notes":    {"type": "string", "description": "Zusätzliche Notizen (optional)"},
+                },
+                "required": ["title"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "todo_list",
+            "description": "Listet Aufgaben auf. Filter: 'offen', 'erledigt', 'alle', 'hoch', 'mittel', 'niedrig'",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "filter": {"type": "string", "description": "Filter (Standard: 'offen')"},
+                },
+                "required": [],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "todo_complete",
+            "description": "Markiert eine Aufgabe als erledigt",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "task_id": {"type": "string", "description": "8-stellige Aufgaben-ID (aus todo_list)"},
+                },
+                "required": ["task_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "todo_delete",
+            "description": "Löscht eine Aufgabe dauerhaft",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "task_id": {"type": "string", "description": "Aufgaben-ID"},
+                },
+                "required": ["task_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "todo_update",
+            "description": "Aktualisiert Titel, Priorität, Deadline oder Notiz einer Aufgabe",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "task_id":  {"type": "string"},
+                    "title":    {"type": "string"},
+                    "priority": {"type": "string"},
+                    "deadline": {"type": "string"},
+                    "notes":    {"type": "string"},
+                },
+                "required": ["task_id"],
+            },
+        },
+    },
+    # ── Morning Briefing ─────────────────────────────────────────────────────
+    {
+        "type": "function",
+        "function": {
+            "name": "morning_briefing",
+            "description": (
+                "Erstellt das tägliche Morning Briefing: Wetter, Kalendertermine, "
+                "offene hochprioritäre Todos sowie aktuelle News aus der 3D-Druck- und Startup-Branche. "
+                "Nutze dieses Tool wenn der Nutzer das Tages-Briefing abruft oder nach dem Tagesplan fragt."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "city": {"type": "string", "description": "Stadt für Wetterabfrage (Standard: Munich)"},
+                },
+                "required": [],
+            },
+        },
+    },
+    # ── Hardware/Embedded Agent ──────────────────────────────────────────────
+    {
+        "type": "function",
+        "function": {
+            "name": "hardware_load_datasheet",
+            "description": (
+                "Lädt ein Bauteil-Datasheet (lokale PDF-Datei oder URL) und extrahiert automatisch "
+                "Kennwerte wie Flash, SRAM, Clock, GPIO, ADC, UART, SPI, I2C. "
+                "Nutze dieses Tool wenn der Nutzer ein Datasheet hochladen oder ein Bauteil einlesen möchte."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "source":         {"type": "string", "description": "Dateipfad oder URL zum PDF"},
+                    "component_name": {"type": "string", "description": "Name des Bauteils, z.B. 'ATmega1284P' (optional)"},
+                },
+                "required": ["source"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "hardware_query_component",
+            "description": (
+                "Beantwortet eine Frage zu einem geladenen Bauteil, z.B. 'Wie viel RAM hat der ATmega1284P?' "
+                "oder 'Hat der ATmega1284P einen ADC?'"
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "component_name": {"type": "string", "description": "Bauteilname, z.B. 'ATmega1284P'"},
+                    "question":       {"type": "string", "description": "Frage zu den Spezifikationen"},
+                },
+                "required": ["component_name", "question"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "hardware_list_components",
+            "description": "Listet alle geladenen Bauteile/Datasheets mit ihren extrahierten Kennwerten auf",
+            "parameters": {"type": "object", "properties": {}, "required": []},
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "hardware_schematic_hints",
+            "description": (
+                "Gibt Mindest-Schaltplan-Hinweise für ein Bauteil zurück: "
+                "Entkopplung, Reset, Taktquelle, Debug-Header etc. "
+                "Nutze dieses Tool wenn der Nutzer Hilfe beim Schaltplan-Design benötigt."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "component_name": {"type": "string", "description": "Bauteilname, z.B. 'ATmega1284P' oder 'STM32F103'"},
+                },
+                "required": ["component_name"],
+            },
+        },
+    },
     # ── Gmail ────────────────────────────────────────────────────────────────
     {
         "type": "function",
@@ -338,6 +553,52 @@ TOOL_SCHEMAS = _CLAUDE_CODING_SCHEMAS + [
 
 def execute_tool(name: str, args: dict) -> str:
     try:
+        # Gehirn
+        if name == "brain_list":
+            from jarvis.tools import brain
+            return brain.list_files()
+        elif name == "brain_read":
+            from jarvis.tools import brain
+            return brain.read_file(**args)
+        elif name == "brain_search":
+            from jarvis.tools import brain
+            return brain.search_files(**args)
+        elif name == "brain_delete":
+            from jarvis.tools import brain
+            return brain.delete_file(**args)
+        # Todo-Liste
+        if name == "todo_add":
+            from jarvis.tools import todo
+            return todo.add_task(**args)
+        elif name == "todo_list":
+            from jarvis.tools import todo
+            return todo.list_tasks(**args)
+        elif name == "todo_complete":
+            from jarvis.tools import todo
+            return todo.complete_task(**args)
+        elif name == "todo_delete":
+            from jarvis.tools import todo
+            return todo.delete_task(**args)
+        elif name == "todo_update":
+            from jarvis.tools import todo
+            return todo.update_task(**args)
+        # Morning Briefing
+        elif name == "morning_briefing":
+            from jarvis.tools import briefing
+            return briefing.morning_briefing(**args)
+        # Hardware Agent
+        elif name == "hardware_load_datasheet":
+            from jarvis.tools import hardware
+            return hardware.load_datasheet(**args)
+        elif name == "hardware_query_component":
+            from jarvis.tools import hardware
+            return hardware.query_component(**args)
+        elif name == "hardware_list_components":
+            from jarvis.tools import hardware
+            return hardware.list_components()
+        elif name == "hardware_schematic_hints":
+            from jarvis.tools import hardware
+            return hardware.schematic_hints(**args)
         # Claude Coding
         if name == "claude_generate_code":
             from jarvis.tools import claude_coder

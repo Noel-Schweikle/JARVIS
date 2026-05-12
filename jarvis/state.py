@@ -44,10 +44,12 @@ class JarvisState:
     def add_activity(self, type_: str, content: str, tool: str = None) -> None:
         with self._lock:
             self._activity_counter += 1
+            # Tool-Argumente kompakt halten, Nutzer- und Assistenten-Texte ungekürzt
+            max_len = 300 if type_ == "tool" else 20_000
             self.activity_log.appendleft({
                 "id": self._activity_counter,
                 "type": type_,
-                "content": (content or "")[:500],
+                "content": (content or "")[:max_len],
                 "tool": tool,
                 "timestamp": datetime.now().isoformat(),
             })

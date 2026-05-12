@@ -1,0 +1,57 @@
+# JARVIS — Feature Roadmap
+# Status: [ ] offen  [~] in Arbeit  [x] fertig
+# Priorität: [!!!] hoch  [!!] mittel  [!] niedrig
+# ─────────────────────────────────────────────────────────────────
+
+## ✅ Bereits implementiert
+  [x] GitHub (Dateien lesen/schreiben, Repos listen)
+  [x] Notion (Suche, Seite lesen, Seite erstellen)
+  [x] Google Calendar (Termine listen, erstellen, löschen)
+  [x] Gmail (E-Mails lesen, senden, suchen)
+  [x] Web-Suche & Seite abrufen (DuckDuckGo, kein API-Key)
+  [x] Spracheingabe & Sprachausgabe (Whisper + OpenAI TTS)
+  [x] Claude Coding Tools (generate / review / explain via Opus)
+  [x] Web-Dashboard (FastAPI + WebSocket, localhost:7777)
+
+## 🔧 In dieser Session ergänzt
+  [x] [!!!] Todo-Liste          → jarvis/tools/todo.py
+      - Lokale JSON-Speicherung (~/.jarvis/todos.json)
+      - Priorität (hoch/mittel/niedrig) + Deadline (ISO-Datum)
+      - Tools: todo_add, todo_list, todo_complete, todo_delete
+  [x] [!!!] Daily Morning Briefing  → jarvis/tools/briefing.py
+      - Heutiger Kalender (Google Calendar)
+      - Wetter via wttr.in (kein API-Key)
+      - News: 3D-Druck- & Startup-Branche (DuckDuckGo)
+      - Tool: morning_briefing
+  [x] [!!!] Hardware/Embedded Agent → jarvis/tools/hardware.py
+      - Datasheets laden: lokale PDF oder URL
+      - Kennwerte extrahieren: Flash, RAM, Clock, GPIO, ADC, UART, SPI, I2C
+      - Abfragen: "Wie viel RAM hat der ATmega1284p?"
+      - Mindest-Schaltplan Hilfe (Decoupling, Reset, AVCC …)
+      - Tools: hardware_load_datasheet, hardware_query_component,
+               hardware_list_components, hardware_schematic_hints
+
+## 📋 Noch offen
+  [ ] [!!]  Structorizer
+      - Unstrukturierten Text / Mind-Map-Notizen als Input
+      - Gibt geordneten Zeitplan oder strukturierten Gliederungstext zurück
+      - Claude-gestützte Umwandlung (kein separates Tool nötig,
+        kann JARVIS direkt mit dem Prompt erledigen)
+
+  [ ] [!!]  Gantt-Diagramm
+      - Input: Projektbeschreibung / Aufgabenliste / Mind Map
+      - Output: Markdown-Tabelle oder ASCII-Gantt-Chart
+      - Zeitachse mit Meilensteinen und Dauer
+      - Hinweis: JARVIS kann das heute schon im Chat —
+        separates Tool sinnvoll wenn Export-Format gewünscht
+
+  [ ] [!]   Google Tasks Sync (Erweiterung der Todo-Liste)
+      - todo.py mit Google Tasks API verknüpfen
+      - Bidirektionale Sync (lokal ↔ Google Tasks)
+
+  [ ] [!]   Sprach-Memo Input für Todos (iOS / Phone)
+      - Voice-Memo auf iPhone → transkribieren → Todo erstellen
+      - Möglicher Weg: Shortcuts-App + JARVIS-Webhook
+
+# ─────────────────────────────────────────────────────────────────
+# Letzte Aktualisierung: 2026-05-12
