@@ -938,6 +938,128 @@ function activityToMessages(log) {
     }));
 }
 
+/* ---- PCM AudioWorklet (runs inside AudioContext, loaded via blob URL) ---- */
+const _WORKLET_SRC = `
+class PcmCapture extends AudioWorkletProcessor {
+  process(inputs) {
+    const ch = inputs[0] && inputs[0][0];
+    if (ch) {
+      const s16 = new Int16Array(ch.length);
+      for (let i = 0; i < ch.length; i++)
+        s16[i] = Math.max(-32768, Math.min(32767, ch[i] * 32768));
+      this.port.postMessage(s16.buffer, [s16.buffer]);
+    }
+    return true;
+  }
+}
+registerProcessor('pcm-capture', PcmCapture);
+`;
+
+function useVoiceWS({ onIntensity, onCaption }) {
+  const wsRef = useRef(null);
+  const audioCtxRef = useRef(null);
+  const streamRef = useRef(null);
+  const workletRef = useRef(null);
+  const nextPlayRef = useRef(0);
+  const [active, setActive] = useState(false);
+  const [error, setError] = useState(null);
+
+  const start = async () => {
+    setError(null);
+    try {
+      // 24 kHz AudioContext — matches Realtime API format
+      const audioCtx = new AudioContext({ sampleRate: 24000 });
+      audioCtxRef.current = audioCtx;
+      nextPlayRef.current = audioCtx.currentTime;
+
+      // Load inline worklet via blob URL
+      const blob = new Blob([_WORKLET_SRC], { type: 'application/javascript' });
+      const blobUrl = URL.createObjectURL(blob);
+      await audioCtx.audioWorklet.addModule(blobUrl);
+      URL.revokeObjectURL(blobUrl);
+
+      // Capture microphone
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: { sampleRate: 24000, channelCount: 1, echoCancellation: true, noiseSuppression: true } });
+      streamRef.current = stream;
+
+      const src = audioCtx.createMediaStreamSource(stream);
+      const worklet = new AudioWorkletNode(audioCtx, 'pcm-capture');
+      src.connect(worklet);
+      workletRef.current = worklet;
+
+      // Connect to backend
+      const ws = new WebSocket(`ws://${location.host}/ws/voice`);
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        setActive(true);
+        // Send mic audio to backend
+        worklet.port.onmessage = (e) => {
+          if (ws.readyState === WebSocket.OPEN) ws.send(e.data);
+        };
+      };
+
+      ws.onclose = () => { setActive(false); _cleanup(); };
+      ws.onerror = () => { setError('Verbindung fehlgeschlagen'); setActive(false); _cleanup(); };
+
+      ws.onmessage = (e) => {
+        const msg = JSON.parse(e.data);
+        if (msg.type === 'audio') {
+          // Decode base64 PCM16 → Float32 → schedule playback
+          const raw = atob(msg.data);
+          const s16 = new Int16Array(raw.length / 2);
+          for (let i = 0; i < s16.length; i++)
+            s16[i] = (raw.charCodeAt(i * 2)) | (raw.charCodeAt(i * 2 + 1) << 8);
+          const f32 = new Float32Array(s16.length);
+          for (let i = 0; i < s16.length; i++) f32[i] = s16[i] / 32768;
+          const buf = audioCtx.createBuffer(1, f32.length, 24000);
+          buf.copyToChannel(f32, 0);
+          const src2 = audioCtx.createBufferSource();
+          src2.buffer = buf;
+          src2.connect(audioCtx.destination);
+          const playAt = Math.max(audioCtx.currentTime + 0.02, nextPlayRef.current);
+          src2.start(playAt);
+          nextPlayRef.current = playAt + buf.duration;
+          onIntensity?.(0.65 + Math.random() * 0.3);
+        } else if (msg.type === 'speech_started') {
+          onIntensity?.(0.85);
+        } else if (msg.type === 'speech_stopped') {
+          onIntensity?.(0.3);
+        } else if (msg.type === 'transcript_delta') {
+          onCaption?.(msg.text, 'delta');
+        } else if (msg.type === 'user_transcript') {
+          onCaption?.(msg.text, 'user');
+        } else if (msg.type === 'jarvis_transcript') {
+          onCaption?.(msg.text, 'jarvis');
+        } else if (msg.type === 'done') {
+          onIntensity?.(0.25);
+          onCaption?.('', 'reset');
+        } else if (msg.type === 'error') {
+          setError(msg.message);
+        }
+      };
+    } catch (err) {
+      setError(err.message || 'Mikrofon-Zugriff verweigert');
+      _cleanup();
+    }
+  };
+
+  const stop = () => {
+    wsRef.current?.close();
+    _cleanup();
+    setActive(false);
+  };
+
+  const _cleanup = () => {
+    workletRef.current?.disconnect();
+    streamRef.current?.getTracks().forEach(t => t.stop());
+    audioCtxRef.current?.close();
+    workletRef.current = null; streamRef.current = null; audioCtxRef.current = null;
+  };
+
+  return { start, stop, active, error };
+}
+
 function renderOpenModule(id, props) {
   if (id==="briefing") return <MorningBriefing calEvents={props.calEvents} calLoading={props.calLoading}/>;
   if (id==="chat")     return <ChatVoice messages={props.liveMessages} onSend={props.onSend} thinking={props.thinking}/>;
@@ -953,8 +1075,8 @@ function renderOpenModule(id, props) {
 function App() {
   const [t, setT] = useTweaks(TWEAK_DEFAULTS);
   const [openModule, setOpenModule] = useState("briefing");
-  const [listening, setListening] = useState(false);
   const [voiceIntensity, setVoiceIntensity] = useState(0.25);
+  const [voiceCaption, setVoiceCaption] = useState("");
   const [inlineInput, setInlineInput] = useState("");
   const [thinking, setThinking] = useState(false);
   const [now, setNow] = useState(new Date());
@@ -962,16 +1084,24 @@ function App() {
   const { calEvents, calLoading } = useCalendar();
   const liveMessages = activityToMessages(jarvisState.activity_log || []);
 
-  useEffect(() => { const id=setInterval(()=>setNow(new Date()),30000); return ()=>clearInterval(id); }, []);
+  const { start: voiceStart, stop: voiceStop, active: listening, error: voiceError } = useVoiceWS({
+    onIntensity: setVoiceIntensity,
+    onCaption: (text, type) => {
+      if (type === 'delta') setVoiceCaption(c => c + text);
+      else if (type === 'user') setVoiceCaption(text);
+      else if (type === 'jarvis') setVoiceCaption(text);
+      else if (type === 'reset') setVoiceCaption("");
+    },
+  });
 
+  // Orb intensity decay when not speaking
   useEffect(() => {
-    if (!listening) {
-      const decay=setInterval(()=>setVoiceIntensity(v=>Math.max(0.18,v*0.92)),50);
-      return ()=>clearInterval(decay);
-    }
-    const id=setInterval(()=>setVoiceIntensity(0.45+Math.random()*0.5),120);
-    return ()=>clearInterval(id);
+    if (listening) return;
+    const id = setInterval(() => setVoiceIntensity(v => Math.max(0.18, v * 0.93)), 60);
+    return () => clearInterval(id);
   }, [listening]);
+
+  useEffect(() => { const id=setInterval(()=>setNow(new Date()),30000); return ()=>clearInterval(id); }, []);
 
   const onSend = async (text) => {
     setThinking(true);
@@ -1047,8 +1177,18 @@ function App() {
           <div className="center">
             <Orb intensity={voiceIntensity} state={listening?"listening":"idle"}/>
             <div className="orb-caption">
-              <div className="state">{listening?"● ZUHÖREN":thinking?"● DENKT…":"BEREIT"}</div>
-              <div className="said">{lastMsg ? lastMsg.text.slice(0,120)+(lastMsg.text.length>120?"…":"") : "Wie kann ich helfen, Sir?"}</div>
+              <div className="state">
+                {listening ? "● ZUHÖREN" : thinking ? "● DENKT…" : voiceError ? "⚠ FEHLER" : "BEREIT"}
+              </div>
+              <div className="said">
+                {voiceError
+                  ? voiceError
+                  : voiceCaption
+                  ? voiceCaption.slice(0,140)+(voiceCaption.length>140?"…":"")
+                  : lastMsg
+                  ? lastMsg.text.slice(0,120)+(lastMsg.text.length>120?"…":"")
+                  : "Wie kann ich helfen, Sir?"}
+              </div>
             </div>
           </div>
 
@@ -1081,7 +1221,11 @@ function App() {
         </div>
 
         <div className="composer glass glass-strong">
-          <button className={`mic-btn ${listening?"active":""}`} onClick={()=>setListening(l=>!l)} title="Mikrofon">
+          <button
+            className={`mic-btn ${listening?"active":""}`}
+            onClick={()=>{ listening ? voiceStop() : voiceStart(); }}
+            title={listening?"Mikrofon stoppen":"Mikrofon starten"}
+          >
             <Icons.Mic size={22} stroke={listening?"#050516":"var(--ink)"}/>
           </button>
           <input
